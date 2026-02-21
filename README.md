@@ -20,15 +20,37 @@ The mobile frontend has been bootstrapped with React Native and Expo using `npx 
 ### Running the Mobile Frontend
 
 ```bash
-# Clone the repository (if not already)
+# clone the repository (if not already)
 git clone https://github.com/PriceSpider-NeuIntel/uci-capstone-2026.git
 cd mobile
 
-# Install Node.js dependencies
+# install Node.js dependencies
 npm install
 
-# Start the Expo runtime
+# start the Expo runtime
 npm run web
 
-# Open Expo Go on your mobile device and scan the QR code in the console
+# open Expo Go on your mobile device and scan the QR code in the console
+```
+
+## FastAPI Backend
+
+### Prerequisites
+
+- Latest version of Python 3
+
+### Running the FastAPI Backend
+
+```bash
+# clone the repository (if not already)
+git clone https://github.com/PriceSpider-NeuIntel/uci-capstone-2026.git
+cd server
+
+# install Python dependencies (virtual environment recommended)
+pip install -r requirements.txt
+
+# start the FastAPI server
+fastapi dev --port 8000
+
+# head to http://localhost:8000/docs to test the API
 ```
