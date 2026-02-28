@@ -8,7 +8,7 @@
     "^(react-native$|react-native[/-]|@react-native/)",
     "^(react$|react[/-]|@react/)",
     "<THIRD_PARTY_MODULES>",
-    "^@/(.*)$",
+    "^@/",
     "^[./]"
   ],
   "importOrderSeparation": true,
