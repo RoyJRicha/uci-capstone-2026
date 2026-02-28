@@ -4,9 +4,9 @@
     "prettier-plugin-tailwindcss"
   ],
   "importOrder": [
-    "^(expo/(.*)$)|^(expo$)|^(expo-(.*)$)|^(@expo/(.*)$)",
-    "^(react-native/(.*)$)|^(react-native$)|^(react-native-(.*)$)|^(@react-native/(.*)$)",
-    "^(react/(.*)$)|^(react$)|^(react-(.*)$)|^(@react/(.*)$)",
+    "^(expo$|expo[/-]|@expo/)",
+    "^(react-native$|react-native[/-]|@react-native/)",
+    "^(react$|react[/-]|@react/)",
     "<THIRD_PARTY_MODULES>",
     "^@/(.*)$",
     "^[./]"
