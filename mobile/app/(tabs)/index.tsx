@@ -1,12 +1,11 @@
 import { Image } from "expo-image";
 import { Link } from "expo-router";
 
-import { Platform, StyleSheet, Text } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 
-import { HelloWave } from "@/components/hello-wave";
-import ParallaxScrollView from "@/components/parallax-scroll-view";
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
+import ParallaxScrollView from "@/components/ui/parallax-scroll-view";
+import { ThemedText } from "@/components/ui/themed-text";
+import { ThemedView } from "@/components/ui/themed-view";
 
 export default function HomeScreen() {
   return (
@@ -21,7 +20,6 @@ export default function HomeScreen() {
     >
       <ThemedView style={styles.titleContainer}>
         <ThemedText className="font-black tracking-widest">Welcome!</ThemedText>
-        <HelloWave />
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 1: Try it</ThemedText>

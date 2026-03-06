@@ -11,7 +11,9 @@ import {
 
 import "@/global.css";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { DetectorProvider } from "@/providers/detector-provider";
 
+// ask claude what this is for
 export const unstable_settings = {
   anchor: "(tabs)",
 };
@@ -21,6 +23,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <DetectorProvider />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen

@@ -28,7 +28,7 @@ cd mobile
 npm install
 
 # start the Expo runtime
-npm run web
+npm run start
 
 # open Expo Go on your mobile device and scan the QR code in the console
 ```

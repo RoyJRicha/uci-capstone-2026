@@ -1,14 +1,18 @@
 {
   "expo": {
     "name": "PriceSpider-Neuintel",
-    "slug": "PriceSpider-Neuintel",
+    "slug": "pricespider-neuintel",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icons/icon.png",
     "scheme": "pricespiderneuintel",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to scan shelves and receipts",
+        "NSMotionUsageDescription": "This app uses motion sensors to detect camera stability"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -35,9 +39,9 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
-          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
-          "recordAudioAndroid": true
+          "cameraPermission": "This app uses the camera to scan shelves and receipts",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": false
         }
       ]
     ],

@@ -1,0 +1,208 @@
+<!doctype html>
+<html>
+  <head></head>
+  <body style="display: none">
+    <script>
+      function postMessage(type, message) {
+        window.ReactNativeWebView.postMessage(
+          JSON.stringify({ type, message }),
+        );
+      }
+
+      // this emscripten handler must appear before opencv.js
+      window.Module = {
+        onRuntimeInitialized: () => postMessage("READY"),
+      };
+    </script>
+    <script async src="https://docs.opencv.org/4.13.0/opencv.js"></script>
+    <script>
+      window.addEventListener("message", onMessage); // ios
+      document.addEventListener("message", onMessage); // android
+
+      // window.cv may be Promise depending on emscripten version
+      if (window.cv && window.cv.then) {
+        window.cv.then((cv) => {
+          window.cv = cv;
+        });
+      }
+
+      function onMessage(event) {
+        const msg = JSON.parse(event.data);
+        if (msg.type !== "ANALYZE_RECEIPT" && msg.type !== "ANALYZE_SHELF") {
+          return;
+        }
+
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const result = analyzeImage(img);
+            postMessage("RESULT", result);
+          } catch {
+            postMessage("ERROR", "image analysis error");
+          }
+        };
+        img.onerror = () => postMessage("ERROR", "image load error");
+        img.src = "data:image/jpeg;base64," + msg.message;
+      }
+
+      let canvas = null;
+      let ctx = null;
+
+      function initCanvas(w, h) {
+        if (!canvas || canvas.width !== w || canvas.height !== h) {
+          canvas = new OffscreenCanvas(w, h);
+          ctx = canvas.getContext("2d", {
+            willReadFrequently: true,
+          });
+        }
+      }
+
+      function analyzeImage(img) {
+        initCanvas(img.width, img.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        // --- OpenCV Pipeline ---
+        let src = cv.matFromImageData(imgData);
+
+        // 1. Resize
+        let resized = new cv.Mat();
+        const maxDim = Math.max(src.cols, src.rows);
+        const scale = maxDim > 640 ? 640 / maxDim : 1;
+        const dsize = new cv.Size(
+          Math.round(src.cols * scale),
+          Math.round(src.rows * scale),
+        );
+        cv.resize(src, resized, dsize, 0, 0, cv.INTER_AREA);
+        src.delete();
+
+        // 2. Grayscale
+        let gray = new cv.Mat();
+        cv.cvtColor(resized, gray, cv.COLOR_RGBA2GRAY);
+        resized.delete();
+
+        // 3. Morphological gradient
+        let grad = new cv.Mat();
+        let morphKernel = cv.getStructuringElement(
+          cv.MORPH_ELLIPSE,
+          new cv.Size(3, 3),
+        );
+        cv.morphologyEx(gray, grad, cv.MORPH_GRADIENT, morphKernel);
+        morphKernel.delete();
+        gray.delete();
+
+        // 4. Otsu binarization
+        let binary = new cv.Mat();
+        cv.threshold(grad, binary, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
+        grad.delete();
+
+        // 5. Horizontal closing
+        let closed = new cv.Mat();
+        let closeKernel = cv.getStructuringElement(
+          cv.MORPH_RECT,
+          new cv.Size(15, 3),
+        );
+        cv.morphologyEx(binary, closed, cv.MORPH_CLOSE, closeKernel);
+        closeKernel.delete();
+        binary.delete();
+
+        // 6. Find contours
+        let contours = new cv.MatVector();
+        let hierarchy = new cv.Mat();
+        cv.findContours(
+          closed,
+          contours,
+          hierarchy,
+          cv.RETR_EXTERNAL,
+          cv.CHAIN_APPROX_SIMPLE,
+        );
+
+        // 7. Collect text regions
+        const imgW = closed.cols;
+        const imgH = closed.rows;
+        const imageArea = imgW * imgH;
+        let textRects = [];
+
+        for (let i = 0; i < contours.size(); i++) {
+          const cnt = contours.get(i);
+          const rect = cv.boundingRect(cnt);
+          const aspectRatio = rect.width / rect.height;
+          const bboxArea = rect.width * rect.height;
+          const areaRatio = bboxArea / imageArea;
+          const contourArea = cv.contourArea(cnt);
+          const fillRatio = contourArea / bboxArea;
+
+          if (
+            aspectRatio >= 1.5 &&
+            aspectRatio <= 40 &&
+            rect.height >= 6 &&
+            rect.height <= imgH * 0.5 &&
+            areaRatio >= 0.0005 &&
+            areaRatio <= 0.6 &&
+            fillRatio >= 0.2
+          ) {
+            textRects.push(rect);
+          }
+        }
+
+        // 8. Classify distance
+        let label = "notFound";
+
+        if (textRects.length >= 3) {
+          let minX = Infinity,
+            minY = Infinity;
+          let maxX = 0,
+            maxY = 0;
+
+          for (const r of textRects) {
+            minX = Math.min(minX, r.x);
+            minY = Math.min(minY, r.y);
+            maxX = Math.max(maxX, r.x + r.width);
+            maxY = Math.max(maxY, r.y + r.height);
+          }
+
+          const combinedArea = (maxX - minX) * (maxY - minY);
+          const coverage = combinedArea / imageArea;
+
+          const EDGE_THRESHOLD = 0.03;
+          let clippedEdges = 0;
+          if (minX / imgW < EDGE_THRESHOLD) clippedEdges++;
+          if ((imgW - maxX) / imgW < EDGE_THRESHOLD) clippedEdges++;
+          if (minY / imgH < EDGE_THRESHOLD) clippedEdges++;
+          if ((imgH - maxY) / imgH < EDGE_THRESHOLD) clippedEdges++;
+
+          if (coverage < 0.1) {
+            label = "tooFar";
+          } else if (coverage > 0.65 && clippedEdges >= 2) {
+            label = "tooClose";
+          } else {
+            label = "good";
+          }
+
+          postMessage("LOG", {
+            width: img.width,
+            height: img.height,
+            coverage,
+            clippedEdges,
+            regionCount: textRects.length,
+          });
+        } else {
+          postMessage("LOG", {
+            width: img.width,
+            height: img.height,
+            coverage: "N/A",
+            clippedEdges: "N/A",
+            regionCount: textRects.length,
+          });
+        }
+
+        // 9. Cleanup
+        closed.delete();
+        contours.delete();
+        hierarchy.delete();
+
+        return label;
+      }
+    </script>
+  </body>
+</html>

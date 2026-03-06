@@ -8,7 +8,7 @@ import Animated, {
 
 import type { PropsWithChildren, ReactElement } from "react";
 
-import { ThemedView } from "@/components/themed-view";
+import { ThemedView } from "@/components/ui/themed-view";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
