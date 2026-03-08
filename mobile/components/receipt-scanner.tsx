@@ -12,6 +12,7 @@ import { useIsFocused } from "@react-navigation/native";
 
 import { useDetector } from "@/hooks/use-detector";
 import { useDeviceStability } from "@/hooks/use-device-stability";
+import { useJerkCorrection } from "@/hooks/use-jerk-correction";
 import { DetectorResult } from "@/services/detector-service";
 
 type Status = "moving" | DetectorResult;
@@ -29,6 +30,7 @@ export default function ReceiptScanner() {
   const [permission, requestPermission] = useCameraPermissions();
   const detector = useDetector();
   const isStable = useDeviceStability();
+  const orientation = useJerkCorrection();
 
   const cameraRef = useRef<CameraView>(null);
 
@@ -46,8 +48,8 @@ export default function ReceiptScanner() {
       detector.isLoading ||
       !isStable ||
       !cameraRef.current ||
-      !isCameraReady ||
-      capturedBase64
+      !isCameraReady
+      // || capturedBase64
     ) {
       return;
     }
@@ -56,12 +58,17 @@ export default function ReceiptScanner() {
       .takePictureAsync({
         base64: true,
         shutterSound: false,
-        skipProcessing: true,
+        skipProcessing: false,
       })
       .then((picture) => {
-        detector.analyzeReceipt(picture.base64!);
+        const rotation = orientation.getRotation();
+        return orientation.ensurePortrait(picture, rotation);
+      })
+      .then((corrected) => {
+        setCapturedBase64(corrected.base64!);
+        detector.analyzeReceipt(corrected.base64!);
       });
-  }, [detector, isStable, isCameraReady, capturedBase64]);
+  }, [detector, isStable, isCameraReady, capturedBase64, orientation]);
 
   // auto capture when status is good
   // useEffect(() => {
@@ -98,11 +105,10 @@ export default function ReceiptScanner() {
   ) : (
     // captured photo view
     <View style={styles.container}>
-      {capturedBase64 ? (
+      {false ? (
         <View style={styles.camera}>
           <Image
             source={{ uri: "data:image/jpeg;base64," + capturedBase64 }}
-            style={StyleSheet.absoluteFill}
             resizeMode="contain"
           />
           <Text
@@ -120,6 +126,7 @@ export default function ReceiptScanner() {
               source={{ uri: "data:image/jpeg;base64," + capturedBase64 }}
               style={StyleSheet.absoluteFill}
               resizeMode="contain"
+              className="top-0 right-0 z-10 w-1/3"
             />
             <CameraView
               ref={cameraRef}

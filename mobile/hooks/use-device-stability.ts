@@ -10,7 +10,7 @@ export function useDeviceStability(threshold = 0.06, settleDuration = 100) {
   const waitingToSettle = useRef(false); // track if timer is already running
 
   useEffect(() => {
-    Accelerometer.setUpdateInterval(100);
+    Accelerometer.setUpdateInterval(200);
 
     const listener = Accelerometer.addListener((a) => {
       if (last.current === null) {
