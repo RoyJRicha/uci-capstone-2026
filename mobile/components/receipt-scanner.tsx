@@ -1,8 +1,4 @@
-import {
-  CameraOrientation,
-  CameraView,
-  useCameraPermissions,
-} from "expo-camera";
+import { CameraView, useCameraPermissions } from "expo-camera";
 
 import { Image, StyleSheet, Text, View } from "react-native";
 
@@ -12,7 +8,7 @@ import { useIsFocused } from "@react-navigation/native";
 
 import { useDetector } from "@/hooks/use-detector";
 import { useDeviceStability } from "@/hooks/use-device-stability";
-import { useJerkCorrection } from "@/hooks/use-jerk-correction";
+import { useOrientation } from "@/hooks/use-orientation";
 import { DetectorResult } from "@/services/detector-service";
 
 type Status = "moving" | DetectorResult;
@@ -30,7 +26,7 @@ export default function ReceiptScanner() {
   const [permission, requestPermission] = useCameraPermissions();
   const detector = useDetector();
   const isStable = useDeviceStability();
-  const orientation = useJerkCorrection();
+  const orientation = useOrientation();
 
   const cameraRef = useRef<CameraView>(null);
 
@@ -57,13 +53,11 @@ export default function ReceiptScanner() {
     cameraRef.current
       .takePictureAsync({
         base64: true,
+        exif: true,
         shutterSound: false,
-        skipProcessing: false,
+        skipProcessing: true,
       })
-      .then((picture) => {
-        const rotation = orientation.getRotation();
-        return orientation.ensurePortrait(picture, rotation);
-      })
+      .then((picture) => orientation.ensurePortrait(picture))
       .then((corrected) => {
         setCapturedBase64(corrected.base64!);
         detector.analyzeReceipt(corrected.base64!);
@@ -122,6 +116,7 @@ export default function ReceiptScanner() {
         isFocused && (
           // live camera view
           <>
+            {/* debug preview */}
             <Image
               source={{ uri: "data:image/jpeg;base64," + capturedBase64 }}
               style={StyleSheet.absoluteFill}
