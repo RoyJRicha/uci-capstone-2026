@@ -5,7 +5,7 @@ import EventEmitter from "eventemitter3";
 const state = {
   isReady: false,
   isLoading: false,
-  isLoggingEnabled: false,
+  isLoggingEnabled: true,
   webViewRef: null as WebView | null,
   eventEmitter: new EventEmitter<"DetectorMessage">(),
 };
@@ -17,8 +17,8 @@ export type DetectorMessage =
   | { type: "ANALYZE_RECEIPT"; message: string }
   | { type: "ANALYZE_SHELF"; message: string }
   | { type: "RESULT"; message: DetectorResult }
-  | { type: "ERROR"; message: Error }
-  | { type: "LOG"; message: string };
+  | { type: "ERROR"; message?: string }
+  | { type: "LOG"; message?: string };
 
 export const DetectorService = {
   register: (ref: WebView | null) => {

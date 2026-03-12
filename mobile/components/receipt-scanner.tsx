@@ -8,7 +8,7 @@ import { useIsFocused } from "@react-navigation/native";
 
 import { useDetector } from "@/hooks/use-detector";
 import { useDeviceStability } from "@/hooks/use-device-stability";
-import { useOrientation } from "@/hooks/use-orientation";
+import { ensurePortrait } from "@/lib/ensure-portrait";
 import { DetectorResult } from "@/services/detector-service";
 
 type Status = "moving" | DetectorResult;
@@ -26,7 +26,6 @@ export default function ReceiptScanner() {
   const [permission, requestPermission] = useCameraPermissions();
   const detector = useDetector();
   const isStable = useDeviceStability();
-  const orientation = useOrientation();
 
   const cameraRef = useRef<CameraView>(null);
 
@@ -50,19 +49,25 @@ export default function ReceiptScanner() {
       return;
     }
 
-    cameraRef.current
-      .takePictureAsync({
-        base64: true,
-        exif: true,
-        shutterSound: false,
-        skipProcessing: true,
-      })
-      .then((picture) => orientation.ensurePortrait(picture))
-      .then((corrected) => {
-        setCapturedBase64(corrected.base64!);
-        detector.analyzeReceipt(corrected.base64!);
-      });
-  }, [detector, isStable, isCameraReady, capturedBase64, orientation]);
+    const timerId = setTimeout(() => {
+      cameraRef
+        .current!.takePictureAsync({
+          base64: true,
+          exif: true,
+          shutterSound: false,
+          skipProcessing: true,
+        })
+        .then((picture) => ensurePortrait(picture))
+        .then((corrected) => {
+          setCapturedBase64(corrected.base64!);
+          detector.analyzeReceipt(corrected.base64!);
+        });
+    }, 0); // 3000 milliseconds = 3 seconds
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [detector, isStable, isCameraReady, capturedBase64]);
 
   // auto capture when status is good
   // useEffect(() => {
@@ -98,7 +103,7 @@ export default function ReceiptScanner() {
     </View>
   ) : (
     // captured photo view
-    <View style={styles.container}>
+    <View className="flex-1 justify-center">
       {false ? (
         <View style={styles.camera}>
           <Image
@@ -128,6 +133,8 @@ export default function ReceiptScanner() {
               animateShutter={false}
               onCameraReady={() => setIsCameraReady(true)}
               pictureSize="640x480"
+              ratio="4:3"
+              // className="flex-1"
               style={styles.camera}
             />
             {/* dimmed overlay with transparent center */}
@@ -135,7 +142,6 @@ export default function ReceiptScanner() {
               <View style={styles.maskTop} />
               <View style={styles.maskMiddle}>
                 <View style={styles.maskSide} />
-                {/* receipt frame */}
                 <View
                   style={[
                     styles.frame,
@@ -159,13 +165,13 @@ export default function ReceiptScanner() {
   );
 }
 
-const FRAME_WIDTH = 300;
-const FRAME_HEIGHT = 420;
+const FRAME_WIDTH = "100%";
+const FRAME_HEIGHT = 450;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   cameraContainer: { flex: 1 }, // ← add this
-  camera: { flex: 1 },
+  camera: { width: "100%", aspectRatio: 3 / 4 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
 
   overlay: { ...StyleSheet.absoluteFillObject },
@@ -183,7 +189,7 @@ const styles = StyleSheet.create({
 
   banner: {
     position: "absolute",
-    bottom: 60,
+    bottom: 50,
     alignSelf: "center",
     backgroundColor: "#00000099",
     paddingHorizontal: 20,

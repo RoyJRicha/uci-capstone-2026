@@ -9,22 +9,14 @@
         );
       }
 
-      // this emscripten handler must appear before opencv.js
+      // this emscripten listener must appear before opencv.js
       window.Module = {
         onRuntimeInitialized: () => postMessage("READY"),
       };
-    </script>
-    <script async src="https://docs.opencv.org/4.13.0/opencv.js"></script>
-    <script>
+
+      // react native webview listener
       window.addEventListener("message", onMessage); // ios
       document.addEventListener("message", onMessage); // android
-
-      // window.cv may be Promise depending on emscripten version
-      if (window.cv && window.cv.then) {
-        window.cv.then((cv) => {
-          window.cv = cv;
-        });
-      }
 
       function onMessage(event) {
         const msg = JSON.parse(event.data);
@@ -44,7 +36,9 @@
         img.onerror = () => postMessage("ERROR", "image load error");
         img.src = "data:image/jpeg;base64," + msg.message;
       }
-
+    </script>
+    <script async src="https://docs.opencv.org/4.13.0/opencv.js"></script>
+    <script>
       let canvas = null;
       let ctx = null;
 
@@ -58,45 +52,37 @@
       }
 
       function analyzeImage(img) {
+        // 1. Draw image to canvas (guaranteed 640×480 portrait)
         initCanvas(img.width, img.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-        // --- OpenCV Pipeline ---
+        // 2. Grayscale — kept alive for brightness check later
         let src = cv.matFromImageData(imgData);
-
-        // 1. Resize
-        let resized = new cv.Mat();
-        const maxDim = Math.max(src.cols, src.rows);
-        const scale = maxDim > 640 ? 640 / maxDim : 1;
-        const dsize = new cv.Size(
-          Math.round(src.cols * scale),
-          Math.round(src.rows * scale),
-        );
-        cv.resize(src, resized, dsize, 0, 0, cv.INTER_AREA);
+        let gray = new cv.Mat();
+        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
         src.delete();
 
-        // 2. Grayscale
-        let gray = new cv.Mat();
-        cv.cvtColor(resized, gray, cv.COLOR_RGBA2GRAY);
-        resized.delete();
+        // 3. Mild blur to reduce sensor noise
+        let blurred = new cv.Mat();
+        cv.GaussianBlur(gray, blurred, new cv.Size(3, 3), 0);
 
-        // 3. Morphological gradient
+        // 4. Morphological gradient
         let grad = new cv.Mat();
         let morphKernel = cv.getStructuringElement(
           cv.MORPH_ELLIPSE,
           new cv.Size(3, 3),
         );
-        cv.morphologyEx(gray, grad, cv.MORPH_GRADIENT, morphKernel);
+        cv.morphologyEx(blurred, grad, cv.MORPH_GRADIENT, morphKernel);
         morphKernel.delete();
-        gray.delete();
+        blurred.delete();
 
-        // 4. Otsu binarization
+        // 5. Otsu binarization
         let binary = new cv.Mat();
         cv.threshold(grad, binary, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
         grad.delete();
 
-        // 5. Horizontal closing
+        // 6. Horizontal closing
         let closed = new cv.Mat();
         let closeKernel = cv.getStructuringElement(
           cv.MORPH_RECT,
@@ -106,7 +92,7 @@
         closeKernel.delete();
         binary.delete();
 
-        // 6. Find contours
+        // 7. Contour detection
         let contours = new cv.MatVector();
         let hierarchy = new cv.Mat();
         cv.findContours(
@@ -117,10 +103,12 @@
           cv.CHAIN_APPROX_SIMPLE,
         );
 
-        // 7. Collect text regions
         const imgW = closed.cols;
         const imgH = closed.rows;
         const imageArea = imgW * imgH;
+
+        // 8. Filter for text-line-shaped contours
+        //    ── FIXES #2 (far) and #3 (close) ──
         let textRects = [];
 
         for (let i = 0; i < contours.size(); i++) {
@@ -133,37 +121,93 @@
           const fillRatio = contourArea / bboxArea;
 
           if (
-            aspectRatio >= 1.5 &&
-            aspectRatio <= 40 &&
-            rect.height >= 6 &&
-            rect.height <= imgH * 0.5 &&
-            areaRatio >= 0.0005 &&
-            areaRatio <= 0.6 &&
-            fillRatio >= 0.2
+            aspectRatio >= 1.8 &&
+            aspectRatio <= 30 &&
+            rect.height >= 5 && // was 8  — lets small far-away text through
+            rect.height <= imgH * 0.25 && // was 0.12 — lets large close-up text through
+            rect.width >= 12 && // was 20  — matches smaller far-away lines
+            areaRatio >= 0.0008 &&
+            areaRatio <= 0.25 && // was 0.2  — accommodates large close-up lines
+            fillRatio >= 0.3
           ) {
             textRects.push(rect);
           }
         }
 
-        // 8. Classify distance
+        // 9. Structural validation and classification
         let label = "notFound";
+        const MIN_TEXT_REGIONS = 5;
 
-        if (textRects.length >= 3) {
+        if (textRects.length >= MIN_TEXT_REGIONS) {
+          // ── Combined bounding box ──
           let minX = Infinity,
             minY = Infinity;
           let maxX = 0,
             maxY = 0;
+          let totalTextArea = 0;
+          let heights = [];
 
           for (const r of textRects) {
             minX = Math.min(minX, r.x);
             minY = Math.min(minY, r.y);
             maxX = Math.max(maxX, r.x + r.width);
             maxY = Math.max(maxY, r.y + r.height);
+            totalTextArea += r.width * r.height;
+            heights.push(r.height);
           }
 
-          const combinedArea = (maxX - minX) * (maxY - minY);
+          const combinedW = maxX - minX;
+          const combinedH = maxY - minY;
+          const combinedArea = combinedW * combinedH;
           const coverage = combinedArea / imageArea;
 
+          // ── Text density ──
+          const textDensity = totalTextArea / combinedArea;
+
+          // ── Left-alignment ──
+          const X_TOLERANCE = imgW * 0.06;
+          const xBins = {};
+          let maxAligned = 0;
+          for (const r of textRects) {
+            const binKey = Math.round(r.x / X_TOLERANCE);
+            xBins[binKey] = (xBins[binKey] || 0) + 1;
+            maxAligned = Math.max(maxAligned, xBins[binKey]);
+          }
+          const alignmentRatio = maxAligned / textRects.length;
+
+          // ── Height consistency ──
+          heights.sort((a, b) => a - b);
+          const medianHeight = heights[Math.floor(heights.length / 2)];
+          const consistentCount = heights.filter(
+            (h) => h >= medianHeight * 0.5 && h <= medianHeight * 1.8,
+          ).length;
+          const heightConsistency = consistentCount / heights.length;
+
+          // ── Combined aspect ratio ──
+          const combinedAspect = combinedW / combinedH;
+
+          // ── Background brightness ──
+          let brightPixels = 0;
+          let totalSampled = 0;
+          const step = 4;
+          for (
+            let y = Math.max(0, Math.floor(minY));
+            y < Math.min(imgH, Math.ceil(maxY));
+            y += step
+          ) {
+            for (
+              let x = Math.max(0, Math.floor(minX));
+              x < Math.min(imgW, Math.ceil(maxX));
+              x += step
+            ) {
+              totalSampled++;
+              if (gray.ucharAt(y, x) > 160) brightPixels++;
+            }
+          }
+          const brightnessRatio =
+            totalSampled > 0 ? brightPixels / totalSampled : 0;
+
+          // ── Edge clipping (bounding-box level, kept for large-coverage check) ──
           const EDGE_THRESHOLD = 0.03;
           let clippedEdges = 0;
           if (minX / imgW < EDGE_THRESHOLD) clippedEdges++;
@@ -171,9 +215,45 @@
           if (minY / imgH < EDGE_THRESHOLD) clippedEdges++;
           if ((imgH - maxY) / imgH < EDGE_THRESHOLD) clippedEdges++;
 
-          if (coverage < 0.1) {
+          // ── FIX #1: Per-region edge-touch detection ──
+          // If 3+ individual text rects are cut off at the same frame edge,
+          // the receipt is running out of frame on that side.
+          const EDGE_TOUCH_PX = 3;
+          const TOUCH_MIN = 3;
+          let touchLeft = 0,
+            touchRight = 0,
+            touchTop = 0,
+            touchBottom = 0;
+
+          for (const r of textRects) {
+            if (r.x <= EDGE_TOUCH_PX) touchLeft++;
+            if (r.x + r.width >= imgW - EDGE_TOUCH_PX) touchRight++;
+            if (r.y <= EDGE_TOUCH_PX) touchTop++;
+            if (r.y + r.height >= imgH - EDGE_TOUCH_PX) touchBottom++;
+          }
+
+          const textCutOff =
+            touchLeft >= TOUCH_MIN ||
+            touchRight >= TOUCH_MIN ||
+            touchTop >= TOUCH_MIN ||
+            touchBottom >= TOUCH_MIN;
+
+          // ── Receipt-likeness gate ──
+          const isReceiptLike =
+            textDensity >= 0.06 && // was 0.08 — slightly relaxed for sparse far-away text
+            alignmentRatio >= 0.3 &&
+            heightConsistency >= 0.5 &&
+            brightnessRatio >= 0.35 &&
+            combinedAspect <= 2.5;
+
+          // ── Classification ──
+          if (!isReceiptLike) {
+            label = "notFound";
+          } else if (coverage < 0.1) {
             label = "tooFar";
-          } else if (coverage > 0.65 && clippedEdges >= 2) {
+          } else if (textCutOff || (coverage > 0.55 && clippedEdges >= 2)) {
+            // textCutOff catches partial off-frame (any direction, any coverage ≥ 0.10)
+            // The second condition catches extreme close-ups filling the whole frame
             label = "tooClose";
           } else {
             label = "good";
@@ -182,21 +262,29 @@
           postMessage("LOG", {
             width: img.width,
             height: img.height,
-            coverage,
+            coverage: +coverage.toFixed(4),
             clippedEdges,
             regionCount: textRects.length,
+            textDensity: +textDensity.toFixed(4),
+            alignmentRatio: +alignmentRatio.toFixed(4),
+            heightConsistency: +heightConsistency.toFixed(4),
+            brightnessRatio: +brightnessRatio.toFixed(4),
+            combinedAspect: +combinedAspect.toFixed(4),
+            touchEdges: { touchLeft, touchRight, touchTop, touchBottom },
+            textCutOff,
+            label,
           });
         } else {
           postMessage("LOG", {
             width: img.width,
             height: img.height,
-            coverage: "N/A",
-            clippedEdges: "N/A",
             regionCount: textRects.length,
+            label,
           });
         }
 
-        // 9. Cleanup
+        // 10. Cleanup
+        gray.delete();
         closed.delete();
         contours.delete();
         hierarchy.delete();

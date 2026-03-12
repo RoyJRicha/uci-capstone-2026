@@ -6,7 +6,7 @@ export function useDetector() {
   const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<DetectorResult>("notFound");
-  const [error, setError] = useState<Error | undefined>(undefined);
+  const [error, setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const unsubscribe = DetectorService.subscribe((msg) => {
