@@ -9,9 +9,9 @@ const exifRotationMap: Record<number, number> = {
 };
 
 export async function ensurePortrait(photo: CameraCapturedPicture) {
-  let rotation = exifRotationMap[photo.exif["Orientation"] as number] ?? 0;
+  const rotation = exifRotationMap[photo.exif["Orientation"] as number] ?? 0;
 
-  let context = ImageManipulator.manipulate(photo.uri);
+  const context = ImageManipulator.manipulate(photo.uri);
   if (rotation !== 0) {
     context.rotate(rotation);
   }

@@ -241,8 +241,8 @@
           // ── Receipt-likeness gate ──
           const isReceiptLike =
             textDensity >= 0.06 && // was 0.08 — slightly relaxed for sparse far-away text
-            alignmentRatio >= 0.3 &&
-            heightConsistency >= 0.5 &&
+            alignmentRatio >= 0.2 &&
+            heightConsistency >= 0.4 &&
             brightnessRatio >= 0.35 &&
             combinedAspect <= 2.5;
 
