@@ -21,7 +21,7 @@ const statusMessages: Record<Status, { color: string; message: string }> = {
   good: { color: "#4ade80", message: "✅  Ready for capture!" },
 };
 
-export default function ReceiptScanner() {
+export function ReceiptScanner() {
   const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
   const detector = useDetector();

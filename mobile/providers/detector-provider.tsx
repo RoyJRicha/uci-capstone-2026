@@ -13,7 +13,7 @@ export function DetectorProvider() {
   useEffect(() => {
     async function load() {
       const [htmlAsset] = await Asset.loadAsync(
-        require("@/assets/detector.html"),
+        require("@/providers/detector.html"),
       );
 
       const dest = new Directory(Paths.document);
