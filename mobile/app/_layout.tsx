@@ -1,4 +1,4 @@
-import { Slot } from "expo-router";
+import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 
@@ -20,6 +20,7 @@ import {
 } from "@expo-google-fonts/manrope";
 
 import "@/global.css";
+import { DetectorProvider } from "@/providers/detector-provider";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -46,8 +47,19 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
+      <DetectorProvider />
       <StatusBar style="dark" />
-      <Slot />
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="scanner"
+          options={{
+            headerShown: false,
+            presentation: "fullScreenModal",
+            animation: "slide_from_bottom",
+          }}
+        />
+      </Stack>
     </SafeAreaProvider>
   );
 }

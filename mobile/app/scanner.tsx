@@ -1,4 +1,5 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { router, useLocalSearchParams } from "expo-router";
 
 import { Image, StyleSheet, Text, View } from "react-native";
 
@@ -21,11 +22,15 @@ const statusMessages: Record<Status, { color: string; message: string }> = {
   good: { color: "#4ade80", message: "✅  Ready for capture!" },
 };
 
-export function ReceiptScanner() {
+export default function Scanner() {
   const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
   const detector = useDetector();
   const isStable = useDeviceStability();
+
+  const { type } = useLocalSearchParams<{
+    type: "shelf" | "receipt";
+  }>();
 
   const cameraRef = useRef<CameraView>(null);
 
@@ -77,6 +82,7 @@ export function ReceiptScanner() {
   //     capturedBase64 ||
   //     status !== "good"
   //   ) {
+  //     router.back();
   //     return;
   //   }
 
@@ -121,13 +127,6 @@ export function ReceiptScanner() {
         isFocused && (
           // live camera view
           <>
-            {/* debug preview */}
-            <Image
-              source={{ uri: "data:image/jpeg;base64," + capturedBase64 }}
-              style={StyleSheet.absoluteFill}
-              resizeMode="contain"
-              className="top-0 right-0 z-10 w-1/3"
-            />
             <CameraView
               ref={cameraRef}
               animateShutter={false}
@@ -145,7 +144,7 @@ export function ReceiptScanner() {
                 <View
                   style={[
                     styles.frame,
-                    { borderColor: statusMessages[status].color },
+                    // { borderColor: statusMessages[status].color },
                   ]}
                 />
                 <View style={styles.maskSide} />

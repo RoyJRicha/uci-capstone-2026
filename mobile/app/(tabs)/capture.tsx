@@ -1,4 +1,5 @@
 import { MaterialIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
 import { ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -67,12 +68,18 @@ export default function CapturePage() {
             title="Shelf Audit"
             subtitle="Capture product placement"
             variant="filled"
+            onPress={() =>
+              router.push({ pathname: "/scanner", params: { type: "shelf" } })
+            }
           />
           <CaptureOption
             icon="receipt-long"
             title="Receipt"
             subtitle="Verify sales records"
             variant="outlined"
+            onPress={() =>
+              router.push({ pathname: "/scanner", params: { type: "receipt" } })
+            }
           />
         </View>
 
