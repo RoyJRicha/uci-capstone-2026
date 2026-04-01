@@ -21,11 +21,7 @@ function TabIcon({
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
-
-  const INNER_PADDING_TOP = 8;
-  const INNER_PADDING_BOTTOM = 8;
-  const tabBarHeight =
-    INNER_PADDING_TOP + INNER_PADDING_BOTTOM + 56 + insets.bottom;
+  const tabBarHeight = 56 + insets.bottom;
 
   return (
     <Tabs
@@ -35,15 +31,14 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: Colors.onSurfaceVariant,
         tabBarLabelStyle: {
           fontFamily: "Inter_600SemiBold",
-          fontSize: 11,
+          fontSize: 9,
           textTransform: "uppercase",
           letterSpacing: 0.5,
         },
         tabBarStyle: {
           borderTopWidth: 0,
-          paddingTop: INNER_PADDING_TOP,
-          paddingBottom: insets.bottom + 8,
-          // height: tabBarHeight,
+          paddingTop: 4,
+          height: tabBarHeight,
           shadowColor: "#191c22",
           shadowOffset: { width: 0, height: -10 },
           shadowOpacity: 0.06,

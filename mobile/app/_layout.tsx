@@ -19,7 +19,7 @@ import {
   Manrope_800ExtraBold,
 } from "@expo-google-fonts/manrope";
 
-import "../global.css";
+import "@/global.css";
 
 SplashScreen.preventAutoHideAsync();
 

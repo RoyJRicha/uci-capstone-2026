@@ -1,6 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
 
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -14,7 +14,7 @@ import { Colors, Shadows } from "@/constants/colors";
 
 export default function HomePage() {
   const insets = useSafeAreaInsets();
-  const tabBarHeight = 8 + 8 + 56 + insets.bottom;
+  const tabBarHeight = 8 + 56 + insets.bottom;
 
   return (
     <SafeAreaView
@@ -26,41 +26,36 @@ export default function HomePage() {
         className="flex-1"
         contentContainerStyle={{
           paddingHorizontal: 24,
-          paddingTop: 32,
-          paddingBottom: tabBarHeight + 16,
+          paddingTop: 24,
+          paddingBottom: tabBarHeight + 20,
         }}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero Section */}
         <View className="mb-10">
           <Text
-            className="text-secondary mb-2 text-xs tracking-widest uppercase"
-            style={{ fontFamily: "Inter_600SemiBold" }}
-          >
-            Available Missions
-          </Text>
-          <Text
             className="text-on-surface mb-1 text-3xl leading-tight tracking-tight"
             style={{ fontFamily: "Manrope_800ExtraBold" }}
           >
-            Analyze the world{"\n"}
-            <Text className="text-primary">around you.</Text>
+            Your local store,{"\n"}
+            <Text className="text-primary">your global impact.</Text>
           </Text>
           <Text
             className="text-on-surface-variant mt-3 text-base"
             style={{ fontFamily: "Inter_400Regular" }}
           >
-            Your data-driven contributions shape the future of local commerce.
+            Your contributions empower the world’s biggest brands with local,
+            human insights.
           </Text>
         </View>
 
         <View className="mb-8">
-          <StatCard value="84%" label="Market Reach" />
+          <StatCard value="2" label="Active Assignments" />
         </View>
 
         {/* Nearby Opportunities */}
         <View
-          className="bg-surface-container-low mb-4 overflow-hidden rounded-xl p-6"
+          className="bg-surface-container-low mb-8 overflow-hidden rounded-xl p-6"
           style={Shadows.editorial}
         >
           <Text
@@ -133,44 +128,31 @@ export default function HomePage() {
               className="text-on-surface-variant text-sm"
               style={{ fontFamily: "Inter_500Medium" }}
             >
-              Retail
-            </Text>
-          </View>
-          <View className="rounded-full px-4 py-2">
-            <Text
-              className="text-on-surface-variant text-sm"
-              style={{ fontFamily: "Inter_500Medium" }}
-            >
-              Dining
+              Recommended
             </Text>
           </View>
         </ScrollView>
 
-        {/* Assignment Card */}
-        <AssignmentCard
-          name="Whole Foods Market"
-          address="1550 N Kingsbury St, Chicago, IL"
-          duration="15-min audit"
-          distance="0.4 miles away"
-          reward="$12.00"
-          tag="Recommended"
-        />
+        {/* Assignment Cards */}
+        <View className="flex-col gap-8">
+          <AssignmentCard
+            name="Whole Foods Market"
+            address="1550 N Kingsbury St, Chicago, IL"
+            duration="15 min"
+            distance="0.4 mi"
+            reward="$12.00"
+            tag="Recommended"
+          />
+          <AssignmentCard
+            name="Costco Wholesale"
+            address="1430 S Ashland Ave, Chicago, IL 60608"
+            duration="31 min"
+            distance="4.4 mi"
+            reward="$14.00"
+            tag="Recommended"
+          />
+        </View>
       </ScrollView>
-
-      {/* FAB */}
-      <Pressable
-        className="bg-primary absolute right-6 bottom-24 z-40 h-14 w-14 items-center justify-center rounded-full active:scale-90"
-        style={{
-          bottom: tabBarHeight + 16, // ← sits just above the tab bar
-          shadowColor: "#00458f",
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.3,
-          shadowRadius: 16,
-          elevation: 8,
-        }}
-      >
-        <MaterialIcons name="add" size={28} color="#ffffff" />
-      </Pressable>
     </SafeAreaView>
   );
 }

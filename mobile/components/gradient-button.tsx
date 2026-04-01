@@ -26,10 +26,11 @@ export function GradientButton({
       style={Shadows.editorial}
     >
       <LinearGradient
-        colors={["#00458f", "#005cbb"]}
+        colors={["#00458f", "#005cc0"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        className="flex-row items-center justify-center gap-2 rounded-full px-6 py-3"
+        style={{ borderRadius: 9999 }}
+        className="flex-row items-center justify-center gap-2 px-6 py-3"
       >
         <Text
           className="text-sm text-white"

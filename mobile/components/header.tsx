@@ -8,7 +8,7 @@ interface HeaderProps {
   title?: string;
 }
 
-export function Header({ title = "Market Insights" }: HeaderProps) {
+export function Header({ title = "Wayvia Insider" }: HeaderProps) {
   return (
     <View className="bg-surface border-outline-variant/10 flex-row items-center justify-between border-b px-6 py-4">
       <View className="flex-row items-center gap-2">

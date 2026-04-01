@@ -35,7 +35,7 @@ export function AssignmentCard({
           <MaterialIcons name="store" size={28} color={Colors.secondary} />
         </View>
         <View className="flex-1">
-          <View className="mb-1 flex-row flex-wrap items-center gap-2">
+          <View className="mb-2 flex-row flex-wrap items-center gap-2">
             <Text
               className="text-on-surface text-lg tracking-tight"
               style={{ fontFamily: "Manrope_700Bold" }}
@@ -43,9 +43,9 @@ export function AssignmentCard({
               {name}
             </Text>
             {tag && (
-              <View className="bg-tertiary-container rounded-full px-2 py-0.5">
+              <View className="bg-tertiary-container rounded-full px-3 py-1">
                 <Text
-                  className="text-on-tertiary-container text-[10px] uppercase"
+                  className="text-on-tertiary-container text-[9.5px] uppercase"
                   style={{ fontFamily: "Inter_700Bold" }}
                 >
                   {tag}
@@ -66,7 +66,7 @@ export function AssignmentCard({
               {address}
             </Text>
           </View>
-          <View className="flex-row gap-4">
+          <View className="flex-row gap-4 truncate">
             <View className="flex-row items-center gap-1.5">
               <MaterialIcons
                 name="schedule"

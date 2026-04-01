@@ -36,7 +36,7 @@ export default function ProfilePage() {
 
           {/* Total Earnings */}
           <View
-            className="bg-surface-container-lowest border-secondary self-start rounded-xl border-l-4 px-6 py-4"
+            className="bg-surface-container-lowest border-secondary w-full self-start rounded-xl border-l-4 px-6 py-4"
             style={Shadows.editorial}
           >
             <Text
@@ -56,7 +56,7 @@ export default function ProfilePage() {
 
         {/* Payment Methods */}
         <View
-          className="bg-surface-container-lowest border-primary mb-6 rounded-xl border-l-4 p-6"
+          className="bg-surface-container-lowest border-primary mb-8 rounded-xl border-l-4 p-6"
           style={Shadows.editorial}
         >
           <View className="mb-4 flex-row items-center gap-3">
@@ -130,7 +130,7 @@ export default function ProfilePage() {
         </View>
 
         {/* Sign Out */}
-        <AnimatedPressable className="bg-error-container/20 active:bg-error-container/40 flex-row items-center justify-center gap-2 rounded-xl py-4">
+        <AnimatedPressable className="bg-error-container/20 active:bg-error-container/40 mb-10 flex-row items-center justify-center gap-2 rounded-xl py-4">
           <MaterialIcons name="logout" size={20} color={Colors.error} />
           <Text
             className="text-error text-sm"

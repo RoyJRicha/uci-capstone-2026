@@ -25,10 +25,11 @@ export function CaptureOption({
     return (
       <AnimatedPressable onPress={onPress} style={Shadows.editorial}>
         <LinearGradient
-          colors={["#00458f", "#005cbb"]}
+          colors={["#00458f", "#005cc0"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          className="items-center rounded-xl p-6"
+          style={{ borderRadius: 12 }}
+          className="items-center p-6"
         >
           <View className="mb-4 rounded-full bg-white/10 p-4">
             <MaterialIcons name={icon} size={36} color="#ffffff" />

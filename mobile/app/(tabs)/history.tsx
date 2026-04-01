@@ -33,7 +33,7 @@ export default function HistoryPage() {
             className="text-on-surface text-3xl tracking-tight"
             style={{ fontFamily: "Manrope_800ExtraBold" }}
           >
-            Submission <Text className="text-primary italic">History</Text>
+            Submission <Text className="text-primary bold">History</Text>
           </Text>
         </View>
 
@@ -67,7 +67,7 @@ export default function HistoryPage() {
           Recent Submissions
         </Text>
 
-        <View className="gap-4">
+        <View className="mb-10 gap-4">
           <SubmissionItem
             name="Nike Flagship Store"
             date="Oct 22, 2023 • 09:15 AM"

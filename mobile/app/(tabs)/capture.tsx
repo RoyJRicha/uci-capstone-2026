@@ -32,7 +32,7 @@ export default function CapturePage() {
             className="text-on-surface-variant text-base"
             style={{ fontFamily: "Inter_400Regular" }}
           >
-            Submit high-quality visual data for field analysis.
+            Submit high-quality price data for field analysis.
           </Text>
         </View>
 
@@ -42,9 +42,9 @@ export default function CapturePage() {
             className="text-on-surface-variant mb-3 text-sm"
             style={{ fontFamily: "Inter_600SemiBold" }}
           >
-            Store Name/ID
+            Store Address
           </Text>
-          <View className="bg-surface-container-lowest border-outline-variant/15 flex-row items-center rounded-lg border px-4 py-3.5">
+          <View className="bg-surface-container-lowest border-outline-variant/15 flex-row items-center rounded-lg border px-4 py-1">
             <MaterialIcons
               name="store"
               size={20}
@@ -53,7 +53,7 @@ export default function CapturePage() {
             />
             <TextInput
               className="text-on-surface flex-1 text-base"
-              placeholder="Enter store name or scan ID..."
+              placeholder="Search here..."
               placeholderTextColor={Colors.outlineVariant}
               style={{ fontFamily: "Inter_400Regular" }}
             />
