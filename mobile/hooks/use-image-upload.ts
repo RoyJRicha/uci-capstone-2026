@@ -1,9 +1,15 @@
 import { fetch } from "expo/fetch";
 
+import { useState } from "react";
+
 export const IMAGE_UPLOAD_API = "http://192.168.86.248:8000";
 
 export function useImageUpload() {
+  const [loading, setLoading] = useState(false);
+
   async function uploadImage(uri: string, type: "shelf" | "receipt") {
+    setLoading(true);
+
     const formData = new FormData();
 
     formData.append("file", {
@@ -17,6 +23,8 @@ export function useImageUpload() {
       body: formData,
     });
 
+    setLoading(false);
+
     if (!uploadResponse.ok) {
       throw new Error(
         `Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`,
@@ -26,5 +34,5 @@ export function useImageUpload() {
     return uploadResponse.json();
   }
 
-  return { uploadImage };
+  return { loading, uploadImage };
 }
