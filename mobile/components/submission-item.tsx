@@ -28,13 +28,13 @@ export function SubmissionItem({
     >
       <View className="mb-2 flex-row items-start justify-between">
         <Text
-          className="text-on-surface flex-1 text-lg tracking-tight"
+          className="text-on-surface flex-1 text-lg tracking-tight pr-1"
           style={{ fontFamily: "Manrope_700Bold" }}
         >
           {name}
         </Text>
         <Text
-          className="text-on-surface-variant text-xs"
+          className="text-on-surface-variant text-xs pt-1"
           style={{ fontFamily: "Inter_500Medium" }}
         >
           {date}

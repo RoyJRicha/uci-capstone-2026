@@ -25,13 +25,13 @@ export default function ProfilePage() {
             className="text-on-surface mb-1 text-3xl tracking-tight"
             style={{ fontFamily: "Manrope_800ExtraBold" }}
           >
-            Alex Harrington
+            Alex Harrison
           </Text>
           <Text
-            className="text-on-surface-variant mb-6 text-base"
+            className="text-on-surface-variant mb-6 bg-transparent text-base"
             style={{ fontFamily: "Inter_500Medium" }}
           >
-            alex.harrington@research-pro.io
+            alex.harrison@research-pro.io
           </Text>
 
           {/* Total Earnings */}
