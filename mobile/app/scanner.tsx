@@ -56,7 +56,7 @@ export default function Scanner() {
 
   const cameraRef = useRef<CameraView>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
-  const [capturedBase64, setCapturedBase64] = useState<string | null>(null);
+  const [capturedImageURI, setCapturedImageURI] = useState<string | null>(null);
 
   const status: keyof typeof statusMessages = !isStable
     ? "moving"
@@ -77,7 +77,7 @@ export default function Scanner() {
       !isStable ||
       !cameraRef.current ||
       !isCameraReady ||
-      capturedBase64
+      capturedImageURI
     ) {
       return;
     }
@@ -95,32 +95,31 @@ export default function Scanner() {
           // add analyzeShelf maybe (but mostly leave it to human input for now)
           detector.analyzeReceipt(corrected.base64!);
         });
-    }, 100);
+    }, 100); // delay every N milliseconds for performance
 
     return () => {
       clearTimeout(timerId);
     };
-  }, [detector, isStable, isCameraReady, capturedBase64]);
+  }, [detector, isStable, isCameraReady, capturedImageURI]);
 
   async function capture() {
-    if (!cameraRef.current || !isCameraReady || capturedBase64) {
+    if (!cameraRef.current || !isCameraReady || capturedImageURI) {
       return;
     }
 
     await cameraRef
       .current!.takePictureAsync({
-        base64: true,
         exif: true,
         shutterSound: false,
       })
       .then((picture) => ensurePortrait(picture))
       .then((corrected) => {
-        setCapturedBase64(corrected.base64!);
+        setCapturedImageURI(corrected.uri);
       });
   }
 
   async function submit() {
-    // mess with capturedbase64 and type
+    // mess with capturedimageuri and type
     router.navigate("/history");
   }
 
@@ -168,16 +167,16 @@ export default function Scanner() {
       />
       {/* send photo pop-up */}
       <Modal
-        visible={!!capturedBase64}
+        visible={!!capturedImageURI}
         transparent
         animationType="slide"
-        onRequestClose={() => setCapturedBase64(null)}
+        onRequestClose={() => setCapturedImageURI(null)}
       >
         <View className="flex-1 justify-end bg-black/90">
           <View className="rounded-t-2xl bg-white p-6">
             {/* Preview thumbnail */}
             <Image
-              source={{ uri: "data:image/jpeg;base64," + capturedBase64 }}
+              source={{ uri: capturedImageURI! }}
               resizeMode="contain"
               className="mt-1.5 mb-4 aspect-3/4 h-[45vh] self-center rounded-2xl"
             />
@@ -193,7 +192,6 @@ export default function Scanner() {
             >
               Make sure that prices are clear and visible.
             </Text>
-
             <View className="gap-3">
               <AnimatedPressable
                 onPress={submit}
@@ -207,7 +205,7 @@ export default function Scanner() {
                 </Text>
               </AnimatedPressable>
               <AnimatedPressable
-                onPress={() => setCapturedBase64(null)}
+                onPress={() => setCapturedImageURI(null)}
                 className="items-center rounded-full bg-gray-100 py-3 shadow-lg"
               >
                 <Text
