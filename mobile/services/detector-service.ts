@@ -71,7 +71,7 @@ export const DetectorService = {
         "[OpenCV]",
         message.type,
         typeof message.message === "object"
-          ? JSON.stringify(message.message, null, 2)
+          ? JSON.stringify((message as any).message, null, 2)
           : (message.message ?? ""),
       );
     }

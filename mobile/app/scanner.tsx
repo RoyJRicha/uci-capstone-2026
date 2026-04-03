@@ -2,7 +2,9 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router, useLocalSearchParams } from "expo-router";
 
+import { ActivityIndicator } from "react-native";
 import { Image, Modal, Text, View } from "react-native";
+import Toast from "react-native-toast-message";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -11,6 +13,7 @@ import { useIsFocused } from "@react-navigation/native";
 import { AnimatedPressable } from "@/components/animated-pressable";
 import { useDetector } from "@/hooks/use-detector";
 import { useDeviceStability } from "@/hooks/use-device-stability";
+import { useImageUpload } from "@/hooks/use-image-upload";
 import { ensurePortrait } from "@/lib/ensure-portrait";
 import { DetectorResult } from "@/services/detector-service";
 
@@ -53,6 +56,7 @@ export default function Scanner() {
   const [permission, requestPermission] = useCameraPermissions();
   const detector = useDetector();
   const isStable = useDeviceStability();
+  const imageUpload = useImageUpload();
 
   const cameraRef = useRef<CameraView>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -92,15 +96,18 @@ export default function Scanner() {
         })
         .then((picture) => ensurePortrait(picture))
         .then((corrected) => {
-          // add analyzeShelf maybe (but mostly leave it to human input for now)
-          detector.analyzeReceipt(corrected.base64!);
+          if (type === "shelf") {
+            detector.analyzeShelf(corrected.base64!);
+          } else {
+            detector.analyzeReceipt(corrected.base64!);
+          }
         });
     }, 100); // delay every N milliseconds for performance
 
     return () => {
       clearTimeout(timerId);
     };
-  }, [detector, isStable, isCameraReady, capturedImageURI]);
+  }, [detector, isStable, isCameraReady, capturedImageURI, type]);
 
   async function capture() {
     if (!cameraRef.current || !isCameraReady || capturedImageURI) {
@@ -119,8 +126,26 @@ export default function Scanner() {
   }
 
   async function submit() {
-    // mess with capturedimageuri and type
-    router.navigate("/history");
+    if (imageUpload.loading) {
+      return;
+    }
+
+    const { success } = await imageUpload.uploadImage(capturedImageURI!, type);
+
+    if (!success) {
+      Toast.show({
+        type: "error",
+        text2: "Upload failed. Please try again later.",
+        text2Style: { fontSize: 13 },
+      });
+    } else {
+      Toast.show({
+        type: "success",
+        text2: "Upload successful!",
+        text2Style: { fontSize: 13 },
+      });
+      router.navigate("/history");
+    }
   }
 
   if (!permission || !permission.granted || !isFocused) {
@@ -197,15 +222,24 @@ export default function Scanner() {
                 onPress={submit}
                 className="bg-primary-container items-center rounded-full py-3"
               >
-                <Text
-                  className="text-white"
-                  style={{ fontFamily: "Inter_600SemiBold" }}
-                >
-                  Send Photo
-                </Text>
+                <View className="flex-row items-center gap-2.5">
+                  <Text
+                    className={
+                      imageUpload.loading ? "text-white/70" : "text-white"
+                    }
+                    style={{ fontFamily: "Inter_600SemiBold" }}
+                  >
+                    Send Photo
+                  </Text>
+                  {imageUpload.loading ? (
+                    <ActivityIndicator size="small" className="text-white/70" />
+                  ) : null}
+                </View>
               </AnimatedPressable>
               <AnimatedPressable
-                onPress={() => setCapturedImageURI(null)}
+                onPress={() =>
+                  !imageUpload.loading && setCapturedImageURI(null)
+                }
                 className="items-center rounded-full bg-gray-100 py-3 shadow-lg"
               >
                 <Text
