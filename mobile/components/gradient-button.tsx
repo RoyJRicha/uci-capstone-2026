@@ -29,8 +29,15 @@ export function GradientButton({
         colors={["#00458f", "#005cc0"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={{ borderRadius: 9999 }}
-        className="flex-row items-center justify-center gap-2 px-6 py-3"
+        style={{
+          borderRadius: 9999,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          paddingHorizontal: 24,
+          paddingVertical: 12,
+          gap: 8,
+        }}
       >
         <Text
           className="text-sm text-white"

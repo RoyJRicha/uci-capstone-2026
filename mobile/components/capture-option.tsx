@@ -28,7 +28,7 @@ export function CaptureOption({
           colors={["#00458f", "#005cc0"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={{ borderRadius: 12 }}
+          style={{ borderRadius: 12, padding: 24, alignItems: "center" }}
           className="items-center p-6"
         >
           <View className="mb-4 rounded-full bg-white/10 p-4">

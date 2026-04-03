@@ -5,7 +5,7 @@ import EventEmitter from "eventemitter3";
 const state = {
   isReady: false,
   isLoading: false,
-  isLoggingEnabled: true,
+  isLoggingEnabled: false,
   webViewRef: null as WebView | null,
   eventEmitter: new EventEmitter<"DetectorMessage">(),
 };

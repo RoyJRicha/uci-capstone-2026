@@ -2,8 +2,14 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router, useLocalSearchParams } from "expo-router";
 
-import { ActivityIndicator } from "react-native";
-import { Image, Modal, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  Modal,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
 import Toast from "react-native-toast-message";
 
 import { useEffect, useRef, useState } from "react";
@@ -101,7 +107,8 @@ export default function Scanner() {
           } else {
             detector.analyzeReceipt(corrected.base64!);
           }
-        });
+        })
+        .catch(() => {});
     }, 50); // delay every N milliseconds for performance
 
     return () => {
@@ -148,7 +155,7 @@ export default function Scanner() {
         text1: "Upload successful!",
         text1Style: { fontSize: 13 },
       });
-      router.navigate("/history");
+      router.replace("/history");
     }
   }
 
@@ -157,43 +164,45 @@ export default function Scanner() {
   }
 
   return (
-    <View className="flex-1">
-      <CameraView
-        ref={cameraRef}
-        animateShutter={false}
-        onCameraReady={() => setIsCameraReady(true)}
-        pictureSize="640x480"
-        ratio="4:3"
-        style={{ flex: 1 }}
-      />
-      <View className="absolute top-11 ml-1 flex-row items-center gap-2.5 rounded-full bg-[#00000080] pt-1.5 pr-5 pb-2 pl-2">
-        <MaterialIcons
-          onPress={() => router.back()}
-          name="chevron-left"
-          size={32}
-          color="white"
-          className="pt-0.5"
+    <>
+      <View className="flex-1">
+        <CameraView
+          ref={cameraRef}
+          animateShutter={false}
+          onCameraReady={() => setIsCameraReady(true)}
+          pictureSize="640x480"
+          ratio="4:3"
+          style={{ flex: 1 }}
         />
+        <View className="absolute top-11 ml-1 flex-row items-center gap-2.5 rounded-full bg-[#00000080] pt-1.5 pr-5 pb-2 pl-2">
+          <MaterialIcons
+            onPress={() => router.back()}
+            name="chevron-left"
+            size={32}
+            color="white"
+            className="pt-0.5"
+          />
+          <Text
+            className="text-lg text-white"
+            style={{ fontFamily: "Manrope_800ExtraBold" }}
+          >
+            Scan {type === "shelf" ? "Shelf" : "Receipt"}
+          </Text>
+        </View>
         <Text
-          className="text-lg text-white"
-          style={{ fontFamily: "Manrope_800ExtraBold" }}
+          className="absolute bottom-[26%] w-fit self-center rounded-full border-[1.5] bg-[#00000080] pt-1 pr-4 pb-1.5 pl-3.5 text-white"
+          style={{
+            fontFamily: "Manrope_700Bold",
+            borderColor: statusMessages[status][type].color,
+          }}
         >
-          Scan {type === "shelf" ? "Shelf" : "Receipt"}
+          {statusMessages[status][type].message}
         </Text>
+        <AnimatedPressable
+          onPress={capture}
+          className="absolute bottom-[14.5%] h-20 w-20 self-center rounded-full border-5 bg-white"
+        />
       </View>
-      <Text
-        className="absolute bottom-[26%] w-fit self-center rounded-full border-[1.5] bg-[#00000080] pt-1 pr-4 pb-1.5 pl-3.5 text-white"
-        style={{
-          fontFamily: "Manrope_700Bold",
-          borderColor: statusMessages[status][type].color,
-        }}
-      >
-        {statusMessages[status][type].message}
-      </Text>
-      <AnimatedPressable
-        onPress={capture}
-        className="absolute bottom-[14.5%] h-20 w-20 self-center rounded-full border-5 bg-white"
-      />
       {/* send photo pop-up */}
       <Modal
         visible={!!capturedImageURI}
@@ -201,13 +210,22 @@ export default function Scanner() {
         animationType="slide"
         onRequestClose={() => setCapturedImageURI(null)}
       >
-        <View className="flex-1 justify-end bg-black/90">
+        <Pressable
+          className="flex-1 justify-end bg-black/90"
+          onPress={() => setCapturedImageURI(null)}
+        >
           <View className="rounded-t-2xl bg-white p-6">
+            <MaterialIcons
+              name="close"
+              size={20}
+              color="gray"
+              className="absolute top-4 left-4"
+            />
             {/* Preview thumbnail */}
             <Image
               source={{ uri: capturedImageURI! }}
               resizeMode="contain"
-              className="mt-1.5 mb-4 aspect-3/4 h-[45vh] self-center rounded-2xl"
+              className="mt-4 mb-4 aspect-3/4 h-[45vh] self-center rounded-2xl"
             />
             <Text
               className="text-on-surface mb-1 text-xl"
@@ -255,8 +273,8 @@ export default function Scanner() {
               </AnimatedPressable>
             </View>
           </View>
-        </View>
+        </Pressable>
       </Modal>
-    </View>
+    </>
   );
 }

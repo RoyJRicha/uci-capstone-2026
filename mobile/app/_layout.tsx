@@ -2,10 +2,11 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 
+import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Inter_400Regular,
@@ -26,6 +27,8 @@ import { DetectorProvider } from "@/providers/detector-provider";
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const [appLoaded, setLoaded] = useState(false);
+
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -38,12 +41,14 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync()
+        .then(() => setLoaded(true))
+        .catch(() => setLoaded(true));
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
-    return null;
+  if (!appLoaded) {
+    return <View />;
   }
 
   return (
