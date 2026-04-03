@@ -3,6 +3,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 import { useEffect } from "react";
 
@@ -46,20 +47,23 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <DetectorProvider />
-      <StatusBar style="dark" />
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="scanner"
-          options={{
-            headerShown: false,
-            presentation: "fullScreenModal",
-            animation: "slide_from_bottom",
-          }}
-        />
-      </Stack>
-    </SafeAreaProvider>
+    <>
+      <SafeAreaProvider>
+        <DetectorProvider />
+        <StatusBar style="dark" />
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="scanner"
+            options={{
+              headerShown: false,
+              presentation: "fullScreenModal",
+              animation: "slide_from_bottom",
+            }}
+          />
+        </Stack>
+      </SafeAreaProvider>
+      <Toast />
+    </>
   );
 }
