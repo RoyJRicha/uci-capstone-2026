@@ -1,8 +1,6 @@
-import { fetch } from "expo/fetch";
-
 import { useState } from "react";
 
-const IMAGE_UPLOAD_API = "http://192.168.86.248:8000";
+import { API_BASE_URL as IMAGE_UPLOAD_API } from "@/constants/api";
 
 type UploadResponse = {
   success: boolean;
@@ -17,6 +15,8 @@ export function useImageUpload() {
     type: "shelf" | "receipt",
   ): Promise<UploadResponse> {
     setLoading(true);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10 seconds
 
     try {
       const formData = new FormData();
@@ -25,17 +25,22 @@ export function useImageUpload() {
         uri,
         name: `${type}.jpg`,
         type: "image/jpeg",
-      } as unknown as Blob);
+      } as any);
 
-      const uploadResponse = await fetch(`${IMAGE_UPLOAD_API}/upload`, {
-        method: "POST",
-        body: formData,
-      });
+      const uploadResponse = await fetch(
+        new URL("/upload", IMAGE_UPLOAD_API).toString(),
+        {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        },
+      );
 
       return { success: uploadResponse.ok, data: await uploadResponse.json() };
     } catch (error) {
       return { success: false, data: { error } };
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   }

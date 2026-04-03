@@ -135,14 +135,14 @@ export default function Scanner() {
     if (!success) {
       Toast.show({
         type: "error",
-        text2: "Upload failed. Please try again later.",
-        text2Style: { fontSize: 13 },
+        text1: "Upload failed. Please try again later.",
+        text1Style: { fontSize: 13 },
       });
     } else {
       Toast.show({
         type: "success",
-        text2: "Upload successful!",
-        text2Style: { fontSize: 13 },
+        text1: "Upload successful!",
+        text1Style: { fontSize: 13 },
       });
       router.navigate("/history");
     }
