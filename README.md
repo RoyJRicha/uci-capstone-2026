@@ -53,4 +53,8 @@ pip install -r requirements.txt
 fastapi dev --port 8000
 
 # head to http://localhost:8000/docs to test the API
+
+# to expose the API to your phone, use VS Code port forwarding to
+# expose port 8000 to the public internet, then paste the link in
+# mobile/constants/api.ts
 ```
