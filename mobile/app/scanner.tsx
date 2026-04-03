@@ -102,7 +102,7 @@ export default function Scanner() {
             detector.analyzeReceipt(corrected.base64!);
           }
         });
-    }, 100); // delay every N milliseconds for performance
+    }, 50); // delay every N milliseconds for performance
 
     return () => {
       clearTimeout(timerId);
@@ -130,7 +130,10 @@ export default function Scanner() {
       return;
     }
 
-    const { success } = await imageUpload.uploadImage(capturedImageURI!, type);
+    const { success, data } = await imageUpload.uploadImage(
+      capturedImageURI!,
+      type,
+    );
 
     if (!success) {
       Toast.show({
@@ -138,6 +141,7 @@ export default function Scanner() {
         text1: "Upload failed. Please try again later.",
         text1Style: { fontSize: 13 },
       });
+      console.error("image upload error:", data);
     } else {
       Toast.show({
         type: "success",

@@ -25,8 +25,7 @@
         }
 
         if (msg.type === "ANALYZE_SHELF") {
-          // placeholder for future shelf analysis
-          postMessage("RESULT", "good");
+          postMessage("RESULT", "good"); // placeholder for future shelf analysis
           return;
         }
 
@@ -48,99 +47,148 @@
       let canvas = null;
       let ctx = null;
 
+      // ══════════════════════════════════════════════════════════════
+      // Persistent OpenCV resources — allocated once, reused every frame.
+      // Only torn down if the frame dimensions change (unlikely at 640×480).
+      // ══════════════════════════════════════════════════════════════
+      let _cvInit = false;
+      let _prevW = 0;
+      let _prevH = 0;
+
+      // Reusable Mats (pre-allocated at the correct size/type)
+      let _src, _gray, _blurred, _grad, _binary, _closed;
+
+      // Structuring elements & Size objects are constant — never recreated
+      let _morphKernel, _closeKernel, _blurSize;
+
       function initCanvas(w, h) {
         if (!canvas || canvas.width !== w || canvas.height !== h) {
           canvas = new OffscreenCanvas(w, h);
-          ctx = canvas.getContext("2d", {
-            willReadFrequently: true,
-          });
+          ctx = canvas.getContext("2d", { willReadFrequently: true });
         }
       }
 
-      function analyzeReceipt(img) {
-        // 1. Draw image to canvas (guaranteed 640×480 portrait)
-        initCanvas(img.width, img.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      function ensureMats(w, h) {
+        if (_cvInit && _prevW === w && _prevH === h) return;
 
-        // 2. Grayscale — kept alive for brightness check later
-        let src = cv.matFromImageData(imgData);
-        let gray = new cv.Mat();
-        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-        src.delete();
+        // Tear down if dimensions changed
+        if (_cvInit) {
+          _src.delete();
+          _gray.delete();
+          _blurred.delete();
+          _grad.delete();
+          _binary.delete();
+          _closed.delete();
+          _morphKernel.delete();
+          _closeKernel.delete();
+        }
 
-        // 3. Mild blur to reduce sensor noise
-        let blurred = new cv.Mat();
-        cv.GaussianBlur(gray, blurred, new cv.Size(3, 3), 0);
+        _prevW = w;
+        _prevH = h;
 
-        // 4. Morphological gradient
-        let grad = new cv.Mat();
-        let morphKernel = cv.getStructuringElement(
+        // Pre-allocate every intermediate Mat at the exact size & type
+        // the downstream operation expects, so OpenCV reuses the buffer
+        // instead of calling create() internally each frame.
+        _src = new cv.Mat(h, w, cv.CV_8UC4);
+        _gray = new cv.Mat(h, w, cv.CV_8UC1);
+        _blurred = new cv.Mat(h, w, cv.CV_8UC1);
+        _grad = new cv.Mat(h, w, cv.CV_8UC1);
+        _binary = new cv.Mat(h, w, cv.CV_8UC1);
+        _closed = new cv.Mat(h, w, cv.CV_8UC1);
+
+        // Kernels are data-independent — safe to keep forever
+        _morphKernel = cv.getStructuringElement(
           cv.MORPH_ELLIPSE,
           new cv.Size(3, 3),
         );
-        cv.morphologyEx(blurred, grad, cv.MORPH_GRADIENT, morphKernel);
-        morphKernel.delete();
-        blurred.delete();
-
-        // 5. Otsu binarization
-        let binary = new cv.Mat();
-        cv.threshold(grad, binary, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
-        grad.delete();
-
-        // 6. Horizontal closing
-        let closed = new cv.Mat();
-        let closeKernel = cv.getStructuringElement(
+        _closeKernel = cv.getStructuringElement(
           cv.MORPH_RECT,
           new cv.Size(15, 3),
         );
-        cv.morphologyEx(binary, closed, cv.MORPH_CLOSE, closeKernel);
-        closeKernel.delete();
-        binary.delete();
+        _blurSize = new cv.Size(3, 3);
 
-        // 7. Contour detection
-        let contours = new cv.MatVector();
-        let hierarchy = new cv.Mat();
+        _cvInit = true;
+      }
+    </script>
+    <script>
+      function analyzeReceipt(img) {
+        const w = img.width;
+        const h = img.height;
+
+        // 1. Draw image to canvas (guaranteed 640×480 portrait)
+        initCanvas(w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        const imgData = ctx.getImageData(0, 0, w, h);
+
+        // Make sure persistent mats match the current dimensions
+        ensureMats(w, h);
+
+        // 2. Blit pixels into the pre-allocated RGBA mat
+        //    (replaces cv.matFromImageData — zero allocation)
+        _src.data.set(imgData.data);
+
+        // 3. Grayscale — _gray is kept for the brightness check later
+        cv.cvtColor(_src, _gray, cv.COLOR_RGBA2GRAY);
+
+        // 4. Mild blur to reduce sensor noise
+        cv.GaussianBlur(_gray, _blurred, _blurSize, 0);
+
+        // 5. Morphological gradient
+        cv.morphologyEx(_blurred, _grad, cv.MORPH_GRADIENT, _morphKernel);
+
+        // 6. Otsu binarization
+        cv.threshold(_grad, _binary, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
+
+        // 7. Horizontal closing
+        cv.morphologyEx(_binary, _closed, cv.MORPH_CLOSE, _closeKernel);
+
+        // 8. Contour detection
+        //    (contours & hierarchy must be fresh each frame because
+        //     findContours populates them with variable-count results)
+        const contours = new cv.MatVector();
+        const hierarchy = new cv.Mat();
         cv.findContours(
-          closed,
+          _closed,
           contours,
           hierarchy,
           cv.RETR_EXTERNAL,
           cv.CHAIN_APPROX_SIMPLE,
         );
 
-        const imgW = closed.cols;
-        const imgH = closed.rows;
+        const imgW = w;
+        const imgH = h;
         const imageArea = imgW * imgH;
+        const maxRectH = imgH * 0.25; // hoist out of loop
 
-        // 8. Filter for text-line-shaped contours
-        //    ── FIXES #2 (far) and #3 (close) ──
-        let textRects = [];
+        // 9. Filter for text-line-shaped contours
+        const textRects = [];
+        const contourCount = contours.size(); // cache — avoids per-iteration call
 
-        for (let i = 0; i < contours.size(); i++) {
+        for (let i = 0; i < contourCount; i++) {
           const cnt = contours.get(i);
           const rect = cv.boundingRect(cnt);
-          const aspectRatio = rect.width / rect.height;
-          const bboxArea = rect.width * rect.height;
+          const rw = rect.width;
+          const rh = rect.height;
+          const aspectRatio = rw / rh;
+          const bboxArea = rw * rh;
           const areaRatio = bboxArea / imageArea;
-          const contourArea = cv.contourArea(cnt);
-          const fillRatio = contourArea / bboxArea;
+          const fillRatio = cv.contourArea(cnt) / bboxArea;
 
           if (
             aspectRatio >= 1.8 &&
             aspectRatio <= 30 &&
-            rect.height >= 5 && // was 8  — lets small far-away text through
-            rect.height <= imgH * 0.25 && // was 0.12 — lets large close-up text through
-            rect.width >= 12 && // was 20  — matches smaller far-away lines
+            rh >= 5 &&
+            rh <= maxRectH &&
+            rw >= 12 &&
             areaRatio >= 0.0008 &&
-            areaRatio <= 0.25 && // was 0.2  — accommodates large close-up lines
+            areaRatio <= 0.25 &&
             fillRatio >= 0.3
           ) {
             textRects.push(rect);
           }
         }
 
-        // 9. Structural validation and classification
+        // 10. Structural validation and classification
         let label = "notFound";
         const MIN_TEXT_REGIONS = 5;
 
@@ -151,13 +199,15 @@
           let maxX = 0,
             maxY = 0;
           let totalTextArea = 0;
-          let heights = [];
+          const heights = [];
 
           for (const r of textRects) {
-            minX = Math.min(minX, r.x);
-            minY = Math.min(minY, r.y);
-            maxX = Math.max(maxX, r.x + r.width);
-            maxY = Math.max(maxY, r.y + r.height);
+            const rx2 = r.x + r.width;
+            const ry2 = r.y + r.height;
+            if (r.x < minX) minX = r.x;
+            if (r.y < minY) minY = r.y;
+            if (rx2 > maxX) maxX = rx2;
+            if (ry2 > maxY) maxY = ry2;
             totalTextArea += r.width * r.height;
             heights.push(r.height);
           }
@@ -172,48 +222,56 @@
 
           // ── Left-alignment ──
           const X_TOLERANCE = imgW * 0.06;
+          const invTol = 1 / X_TOLERANCE; // multiply is faster than divide
           const xBins = {};
           let maxAligned = 0;
           for (const r of textRects) {
-            const binKey = Math.round(r.x / X_TOLERANCE);
-            xBins[binKey] = (xBins[binKey] || 0) + 1;
-            maxAligned = Math.max(maxAligned, xBins[binKey]);
+            const binKey = Math.round(r.x * invTol);
+            const count = (xBins[binKey] = (xBins[binKey] || 0) + 1);
+            if (count > maxAligned) maxAligned = count;
           }
           const alignmentRatio = maxAligned / textRects.length;
 
           // ── Height consistency ──
           heights.sort((a, b) => a - b);
-          const medianHeight = heights[Math.floor(heights.length / 2)];
-          const consistentCount = heights.filter(
-            (h) => h >= medianHeight * 0.5 && h <= medianHeight * 1.8,
-          ).length;
+          const medianHeight = heights[heights.length >> 1];
+          const hLow = medianHeight * 0.5;
+          const hHigh = medianHeight * 1.8;
+          let consistentCount = 0;
+          for (let i = 0; i < heights.length; i++) {
+            const hv = heights[i];
+            if (hv >= hLow && hv <= hHigh) consistentCount++;
+          }
           const heightConsistency = consistentCount / heights.length;
 
           // ── Combined aspect ratio ──
           const combinedAspect = combinedW / combinedH;
 
           // ── Background brightness ──
+          //    Direct buffer access: _gray.data is a Uint8Array view over
+          //    the Emscripten heap — ~10-50× faster than per-pixel ucharAt()
+          //    calls which each cross the JS↔WASM boundary.
+          const grayData = _gray.data;
+          const grayCols = imgW;
           let brightPixels = 0;
           let totalSampled = 0;
           const step = 4;
-          for (
-            let y = Math.max(0, Math.floor(minY));
-            y < Math.min(imgH, Math.ceil(maxY));
-            y += step
-          ) {
-            for (
-              let x = Math.max(0, Math.floor(minX));
-              x < Math.min(imgW, Math.ceil(maxX));
-              x += step
-            ) {
+          const yStart = Math.max(0, minY | 0); // bitwise-OR floors positive floats
+          const yEnd = Math.min(imgH, Math.ceil(maxY));
+          const xStart = Math.max(0, minX | 0);
+          const xEnd = Math.min(imgW, Math.ceil(maxX));
+
+          for (let y = yStart; y < yEnd; y += step) {
+            const rowOffset = y * grayCols;
+            for (let x = xStart; x < xEnd; x += step) {
               totalSampled++;
-              if (gray.ucharAt(y, x) > 160) brightPixels++;
+              if (grayData[rowOffset + x] > 160) brightPixels++;
             }
           }
           const brightnessRatio =
             totalSampled > 0 ? brightPixels / totalSampled : 0;
 
-          // ── Edge clipping (bounding-box level, kept for large-coverage check) ──
+          // ── Edge clipping (bounding-box level) ──
           const EDGE_THRESHOLD = 0.03;
           let clippedEdges = 0;
           if (minX / imgW < EDGE_THRESHOLD) clippedEdges++;
@@ -221,11 +279,11 @@
           if (minY / imgH < EDGE_THRESHOLD) clippedEdges++;
           if ((imgH - maxY) / imgH < EDGE_THRESHOLD) clippedEdges++;
 
-          // ── FIX #1: Per-region edge-touch detection ──
-          // If 3+ individual text rects are cut off at the same frame edge,
-          // the receipt is running out of frame on that side.
+          // ── Per-region edge-touch detection ──
           const EDGE_TOUCH_PX = 3;
           const TOUCH_MIN = 3;
+          const rightEdge = imgW - EDGE_TOUCH_PX; // hoist out of loop
+          const bottomEdge = imgH - EDGE_TOUCH_PX;
           let touchLeft = 0,
             touchRight = 0,
             touchTop = 0,
@@ -233,9 +291,9 @@
 
           for (const r of textRects) {
             if (r.x <= EDGE_TOUCH_PX) touchLeft++;
-            if (r.x + r.width >= imgW - EDGE_TOUCH_PX) touchRight++;
+            if (r.x + r.width >= rightEdge) touchRight++;
             if (r.y <= EDGE_TOUCH_PX) touchTop++;
-            if (r.y + r.height >= imgH - EDGE_TOUCH_PX) touchBottom++;
+            if (r.y + r.height >= bottomEdge) touchBottom++;
           }
 
           const textCutOff =
@@ -246,7 +304,7 @@
 
           // ── Receipt-likeness gate ──
           const isReceiptLike =
-            textDensity >= 0.06 && // was 0.08 — slightly relaxed for sparse far-away text
+            textDensity >= 0.06 &&
             alignmentRatio >= 0.2 &&
             heightConsistency >= 0.4 &&
             brightnessRatio >= 0.35 &&
@@ -258,40 +316,36 @@
           } else if (coverage < 0.1) {
             label = "tooFar";
           } else if (textCutOff || (coverage > 0.55 && clippedEdges >= 2)) {
-            // textCutOff catches partial off-frame (any direction, any coverage ≥ 0.10)
-            // The second condition catches extreme close-ups filling the whole frame
             label = "tooClose";
           } else {
             label = "good";
           }
 
-          postMessage("LOG", {
-            width: img.width,
-            height: img.height,
-            coverage: +coverage.toFixed(4),
-            clippedEdges,
-            regionCount: textRects.length,
-            textDensity: +textDensity.toFixed(4),
-            alignmentRatio: +alignmentRatio.toFixed(4),
-            heightConsistency: +heightConsistency.toFixed(4),
-            brightnessRatio: +brightnessRatio.toFixed(4),
-            combinedAspect: +combinedAspect.toFixed(4),
-            touchEdges: { touchLeft, touchRight, touchTop, touchBottom },
-            textCutOff,
-            label,
-          });
+          // postMessage("LOG", {
+          //   width: w,
+          //   height: h,
+          //   coverage: +coverage.toFixed(4),
+          //   clippedEdges,
+          //   regionCount: textRects.length,
+          //   textDensity: +textDensity.toFixed(4),
+          //   alignmentRatio: +alignmentRatio.toFixed(4),
+          //   heightConsistency: +heightConsistency.toFixed(4),
+          //   brightnessRatio: +brightnessRatio.toFixed(4),
+          //   combinedAspect: +combinedAspect.toFixed(4),
+          //   touchEdges: { touchLeft, touchRight, touchTop, touchBottom },
+          //   textCutOff,
+          //   label,
+          // });
         } else {
-          postMessage("LOG", {
-            width: img.width,
-            height: img.height,
-            regionCount: textRects.length,
-            label,
-          });
+          // postMessage("LOG", {
+          //   width: w,
+          //   height: h,
+          //   regionCount: textRects.length,
+          //   label,
+          // });
         }
 
-        // 10. Cleanup
-        gray.delete();
-        closed.delete();
+        // 11. Cleanup — only the two per-frame allocations
         contours.delete();
         hierarchy.delete();
 
