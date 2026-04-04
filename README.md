@@ -27,6 +27,9 @@ cd mobile
 # install Node.js dependencies
 npm install
 
+# paste the provided .env file in mobile/.env
+# (it should look like mobile/.env.example)
+
 # start the Expo runtime
 npm run start
 

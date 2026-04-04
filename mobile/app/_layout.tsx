@@ -22,6 +22,7 @@ import {
 } from "@expo-google-fonts/manrope";
 
 import "@/global.css";
+import { AuthProvider } from "@/providers/auth-provider";
 import { DetectorProvider } from "@/providers/detector-provider";
 
 SplashScreen.preventAutoHideAsync();
@@ -55,18 +56,20 @@ export default function RootLayout() {
     <>
       <SafeAreaProvider>
         <DetectorProvider />
-        <StatusBar style="dark" />
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="scanner"
-            options={{
-              headerShown: false,
-              presentation: "fullScreenModal",
-              animation: "slide_from_bottom",
-            }}
-          />
-        </Stack>
+        <AuthProvider>
+          <StatusBar style="dark" />
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="scanner"
+              options={{
+                headerShown: false,
+                presentation: "fullScreenModal",
+                animation: "slide_from_bottom",
+              }}
+            />
+          </Stack>
+        </AuthProvider>
       </SafeAreaProvider>
       <Toast />
     </>

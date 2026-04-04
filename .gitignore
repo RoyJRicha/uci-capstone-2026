@@ -56,3 +56,7 @@ __pycache__
 
 # artifacts
 /server/uploads/
+
+# secrets
+.env
+.env.local
