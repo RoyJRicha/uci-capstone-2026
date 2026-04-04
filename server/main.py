@@ -5,11 +5,13 @@ from datetime import date
 
 import PIL.Image
 import pandas as pd
+from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 from google.cloud import storage
-from pydantic import BaseModel
+
+load_dotenv()
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -40,9 +42,9 @@ def process_with_gemini(save_path: str):
         "UPC (leave empty if barcode is not clearly visible), and misplaced boolean "
         "(is it on the wrong shelf based on other items in photo)"
     )
-    print("promting gemini....")
+    print("Processing shelf image...")
     response = client.models.generate_content(
-        model="gemini-3.1-pro-preview",
+        model="gemini-3.1-flash-lite-preview",
         contents=[query, img],
     )
     location = input("Input the retail location of photo: ")
