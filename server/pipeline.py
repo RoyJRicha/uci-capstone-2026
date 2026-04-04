@@ -6,7 +6,7 @@ from pyzbar import pyzbar
 import cv2
 from typing import Optional, Dict, Any
 
-CONFIDENCE_THRESHOLD = 0.8 #not sure what this should be set to
+CONFIDENCE_THRESHOLD = 0.8 # not sure what this should be set to
 
 class ExtractionResult(BaseModel):
     data: Dict[str, Any]
@@ -59,13 +59,13 @@ class RetrievalPipeline:
             if img_cv is None:
                 return ExtractionResult(data={}, confidence=0.0, method_used="barcode")
             
-            #convert to grayscale
+            # convert to grayscale
             gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
 
-            #gaussian blur to reduce noise
+            # gaussian blur to reduce noise
             blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
-            #sepaeate bars from the background
+            # sepaeate bars from the background
             _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
             detected_barcodes = pyzbar.decode(thresh)
@@ -110,9 +110,9 @@ class RetrievalPipeline:
         # TODO: Add to a list/queue for human auditors to review and input data manually
         return ExtractionResult(data={}, confidence=0.5, method_used="human_audit")
 
-# Integration into your FastAPI upload endpoint
 # background_tasks.add_task(run_pipeline, save_path, metadata)
 # need to define what metadata we want to pass in here
+# integrate with fastapi endpoint
 async def run_pipeline(save_path, metadata):
     pipeline = RetrievalPipeline(save_path, metadata)
     final_data = await pipeline.run()
