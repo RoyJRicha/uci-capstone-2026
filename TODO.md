@@ -17,6 +17,9 @@ Backend:
 - processing flow of receipt part prettymuch the same as the shelf images
   receive image through FastAPI, store image into local/cloud data (currently working on uploading), upload parsed and structured data to SQL or other relational database. Upload csv's to cloud data storage if needed as well
 
+- catch error when gemini api is down, and retry later or go to next steps in   
+  retrieval pipeline? 
+
 Both Kinda:
 
 - some kind of user auth upon opening app. Need some kind of global user-id to go with data storage.
