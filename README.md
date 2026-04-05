@@ -52,9 +52,9 @@ cd server
 # install Python dependencies (virtual environment recommended)
 pip install -r requirements.txt
 
-# to process images with Gemini, first create a Gemini API key
-# then create an .env file in the server directory with the following format:
-GEMINI_API_KEY=your_api_key
+# paste your Gemini API key in server/.env with the following format
+# (it should look like server/.env.example):
+# GEMINI_API_KEY=your_api_key
 
 # start the FastAPI server
 fastapi dev --port 8000
