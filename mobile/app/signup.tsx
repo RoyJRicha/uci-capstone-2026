@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -17,6 +18,8 @@ import { useRef, useState } from "react";
 import { PasswordInput } from "@/components/password-input";
 import { Colors } from "@/constants/colors";
 import { useAuth } from "@/hooks/use-auth";
+
+const smallText = Platform.OS === "ios" ? "text-base" : "text-sm";
 
 export default function Signup() {
   const { signUp } = useAuth();
@@ -88,7 +91,7 @@ export default function Signup() {
                 Create account
               </Text>
               <Text
-                className="text-on-surface-variant text-base"
+                className={`text-on-surface-variant ${smallText}`}
                 style={{ fontFamily: "Inter_400Regular" }}
               >
                 Start your journey to empowering local commerce.
@@ -100,7 +103,7 @@ export default function Signup() {
               {/* name */}
               <View className="gap-2">
                 <Text
-                  className="text-on-surface-variant text-sm"
+                  className={`text-on-surface-variant ${smallText}`}
                   style={{ fontFamily: "Inter_400Regular" }}
                 >
                   Full Name
@@ -114,7 +117,7 @@ export default function Signup() {
                     />
                   </View>
                   <TextInput
-                    className="font-body text-on-surface flex-1 py-3 pr-4 pl-3 text-sm"
+                    className={`font-body text-on-surface flex-1 py-3 pr-4 pl-3 ${smallText} ${Platform.OS === "ios" ? "leading-0" : ""}`}
                     placeholder="Enter your full name"
                     placeholderTextColor="rgba(114,119,132,0.5)"
                     value={name}
@@ -133,7 +136,7 @@ export default function Signup() {
               {/* Email */}
               <View className="gap-2">
                 <Text
-                  className="text-on-surface-variant text-sm"
+                  className={`text-on-surface-variant ${smallText}`}
                   style={{ fontFamily: "Inter_400Regular" }}
                 >
                   Email Address
@@ -147,7 +150,7 @@ export default function Signup() {
                     />
                   </View>
                   <TextInput
-                    className="font-body text-on-surface flex-1 py-3 pr-4 pl-3 text-sm"
+                    className={`font-body text-on-surface flex-1 py-3 pr-4 pl-3 ${smallText} ${Platform.OS === "ios" ? "leading-0" : ""}`}
                     placeholder="name@company.com"
                     placeholderTextColor="rgba(114,119,132,0.5)"
                     value={email}
@@ -167,7 +170,7 @@ export default function Signup() {
               <View className="gap-2">
                 <View className="flex-row items-center justify-between">
                   <Text
-                    className="text-on-surface-variant text-sm"
+                    className={`text-on-surface-variant ${smallText}`}
                     style={{ fontFamily: "Inter_400Regular" }}
                   >
                     Password
@@ -185,7 +188,7 @@ export default function Signup() {
                   </View>
                   <PasswordInput
                     ref={passwordRef}
-                    className="font-body text-on-surface flex-1 py-3 pr-4 pl-3 text-sm"
+                    className={`font-body text-on-surface flex-1 py-3 pr-4 pl-3 ${smallText}`}
                     placeholder="Min. 6 characters"
                     placeholderTextColor="rgba(114,119,132,0.5)"
                     value={password}
@@ -206,6 +209,7 @@ export default function Signup() {
                 }}
                 disabled={isLoading}
                 className="flex-row items-start gap-3 py-2"
+                hitSlop={{ top: 15, left: 15, right: 15, bottom: 15 }}
               >
                 <View
                   className="mt-0.5 h-5 w-5 items-center justify-center rounded"
@@ -217,7 +221,7 @@ export default function Signup() {
                     <MaterialIcons name="check" size={16} color="white" />
                   )}
                 </View>
-                <Text className="text-on-surface-variant flex-1 text-sm">
+                <Text className={`text-on-surface-variant flex-1 ${smallText}`}>
                   I agree to the{" "}
                   <Text
                     className="text-primary font-medium"
@@ -268,7 +272,9 @@ export default function Signup() {
                     <ActivityIndicator color="white" />
                   ) : (
                     <>
-                      <Text className="font-headline text-on-primary text-base font-bold">
+                      <Text
+                        className={`font-headline text-on-primary ${smallText} font-bold`}
+                      >
                         Create Account
                       </Text>
                       <MaterialIcons
@@ -283,22 +289,25 @@ export default function Signup() {
             </View>
 
             {/* Sign-up footer */}
-            <View className="mt-3 items-center pt-6">
+            <Pressable
+              className="mt-3 w-fit items-center pt-6"
+              onPress={() => router.replace("/login")}
+              hitSlop={{ right: 5, bottom: 5 }}
+            >
               <Text
-                className="text-on-surface-variant text-sm"
+                className={`text-on-surface-variant ${smallText}`}
                 style={{ fontFamily: "Inter_400Regular" }}
               >
                 {"Already have an account? "}
                 <Text
-                  className="text-primary text-sm"
+                  className={`text-primary ${smallText}`}
                   style={{ fontFamily: "Inter_600SemiBold" }}
-                  onPress={() => router.replace("/login")}
                   suppressHighlighting
                 >
                   Sign in
                 </Text>
               </Text>
-            </View>
+            </Pressable>
           </View>
         </View>
       </View>

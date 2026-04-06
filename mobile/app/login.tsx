@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -17,6 +18,8 @@ import { useRef, useState } from "react";
 import { PasswordInput } from "@/components/password-input";
 import { Colors } from "@/constants/colors";
 import { useAuth } from "@/hooks/use-auth";
+
+const smallText = Platform.OS === "ios" ? "text-base" : "text-sm";
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -89,7 +92,7 @@ export default function LoginScreen() {
                 Welcome back
               </Text>
               <Text
-                className="text-on-surface-variant text-base"
+                className={`text-on-surface-variant ${smallText}`}
                 style={{ fontFamily: "Inter_400Regular" }}
               >
                 Enter your credentials to access your insider portal.
@@ -101,7 +104,7 @@ export default function LoginScreen() {
               {/* Email */}
               <View className="gap-2">
                 <Text
-                  className="text-on-surface-variant text-sm"
+                  className={`text-on-surface-variant ${smallText}`}
                   style={{ fontFamily: "Inter_400Regular" }}
                 >
                   Email Address
@@ -115,7 +118,7 @@ export default function LoginScreen() {
                     />
                   </View>
                   <TextInput
-                    className="font-body text-on-surface flex-1 py-3 pr-4 pl-3 text-sm"
+                    className={`font-body text-on-surface flex-1 py-3 pr-4 pl-3 ${smallText} ${Platform.OS === "ios" ? "leading-0" : ""}`}
                     placeholder="name@company.com"
                     placeholderTextColor="rgba(114,119,132,0.5)"
                     value={email}
@@ -135,14 +138,14 @@ export default function LoginScreen() {
               <View className="gap-2">
                 <View className="flex-row items-center justify-between">
                   <Text
-                    className="text-on-surface-variant text-sm"
+                    className={`text-on-surface-variant ${smallText}`}
                     style={{ fontFamily: "Inter_400Regular" }}
                   >
                     Password
                   </Text>
                   <Pressable disabled={isLoading} hitSlop={8}>
                     <Text
-                      className="text-primary text-sm"
+                      className={`text-primary ${smallText}`}
                       style={{ fontFamily: "Inter_600SemiBold" }}
                     >
                       Forgot Password?
@@ -161,7 +164,7 @@ export default function LoginScreen() {
                   </View>
                   <PasswordInput
                     ref={passwordRef}
-                    className="font-body text-on-surface flex-1 py-3 pr-4 pl-3 text-sm"
+                    className={`font-body text-on-surface flex-1 py-3 pr-4 pl-3 ${smallText}`}
                     placeholder="••••••••"
                     placeholderTextColor="rgba(114,119,132,0.5)"
                     value={password}
@@ -206,7 +209,9 @@ export default function LoginScreen() {
                     <ActivityIndicator color="white" />
                   ) : (
                     <>
-                      <Text className="font-headline text-on-primary text-base font-bold">
+                      <Text
+                        className={`font-headline text-on-primary ${smallText} font-bold`}
+                      >
                         Sign In
                       </Text>
                       <MaterialIcons
@@ -221,28 +226,31 @@ export default function LoginScreen() {
             </View>
 
             {/* Sign-up footer */}
-            <View className="mt-3 items-center pt-8">
+            <Pressable
+              className="mt-3 w-fit items-center pt-8"
+              onPress={() => router.replace("/signup")}
+              hitSlop={{ right: 5, bottom: 5 }}
+            >
               <Text
-                className="text-on-surface-variant text-sm"
+                className={`text-on-surface-variant ${smallText}`}
                 style={{ fontFamily: "Inter_400Regular" }}
               >
                 {"Don't have an account? "}
                 <Text
-                  className="text-primary text-sm"
+                  className={`text-primary ${smallText}`}
                   style={{ fontFamily: "Inter_600SemiBold" }}
-                  onPress={() => router.replace("/signup")}
                   suppressHighlighting
                 >
                   Sign up
                 </Text>
               </Text>
-            </View>
+            </Pressable>
           </View>
         </View>
       </View>
 
       {/* footer text */}
-      <Text className="font-label text-on-surface-variant p-2 text-center text-xs tracking-widest uppercase opacity-60">
+      <Text className="font-label text-on-surface-variant px-5 text-center text-xs tracking-widest uppercase opacity-60">
         Trusted by the world’s greatest omnicommerce brands & partners
       </Text>
     </ScrollView>

@@ -1,6 +1,12 @@
 import { MaterialIcons } from "@expo/vector-icons";
 
-import { Pressable, TextInput, TextInputProps, View } from "react-native";
+import {
+  Platform,
+  Pressable,
+  TextInput,
+  TextInputProps,
+  View,
+} from "react-native";
 
 import React, { forwardRef, useState } from "react";
 
@@ -16,7 +22,7 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(
           ref={ref}
           {...props}
           secureTextEntry={!isVisible}
-          className="font-body text-on-surface flex-1 py-3 pr-21 pl-3 text-sm"
+          className={`font-body text-on-surface flex-1 py-3 pr-21 pl-3 text-sm ${Platform.OS === "ios" ? "leading-0" : ""}`}
         />
         <Pressable
           onPress={() => setIsVisible((prev) => !prev)}
