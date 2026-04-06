@@ -17,7 +17,7 @@ interface AuthContextValue {
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  sendPasswordReset: (email: string) => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -46,8 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut: async () => {
       await authService.signOut();
     },
-    sendPasswordReset: async (email) => {
-      await authService.sendPasswordReset(email);
+    deleteAccount: async () => {
+      await authService.deleteAccount(user!);
     },
   };
 

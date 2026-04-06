@@ -1,6 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
 
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AnimatedPressable } from "@/components/animated-pressable";
@@ -9,7 +9,18 @@ import { Colors, Shadows } from "@/constants/colors";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function ProfilePage() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, deleteAccount } = useAuth();
+
+  async function handleDeleteAccount() {
+    try {
+      await deleteAccount();
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        "Failed to delete account. Please try again after signing in recently.",
+      );
+    }
+  }
 
   return (
     <SafeAreaView
@@ -143,6 +154,20 @@ export default function ProfilePage() {
             style={{ fontFamily: "Inter_700Bold" }}
           >
             Sign Out
+          </Text>
+        </AnimatedPressable>
+
+        {/* delete account button for debugging */}
+        <AnimatedPressable
+          className="bg-error-container/20 active:bg-error-container/40 -mt-5 mb-10 flex-row items-center justify-center gap-2 rounded-xl py-4"
+          onPress={handleDeleteAccount}
+        >
+          <MaterialIcons name="logout" size={20} color={Colors.error} />
+          <Text
+            className="text-error text-sm"
+            style={{ fontFamily: "Inter_700Bold" }}
+          >
+            Delete Account
           </Text>
         </AnimatedPressable>
       </ScrollView>

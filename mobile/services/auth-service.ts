@@ -1,9 +1,7 @@
 import {
-  EmailAuthProvider,
   type User,
   createUserWithEmailAndPassword,
-  reauthenticateWithCredential,
-  sendPasswordResetEmail,
+  deleteUser,
   signInWithEmailAndPassword,
   signOut,
   updateEmail,
@@ -31,21 +29,15 @@ export const authService = {
     return signOut(auth);
   },
 
-  sendPasswordReset: (email: string) => {
-    return sendPasswordResetEmail(auth, email);
-  },
-
-  // re-auth is required by Firebase before sensitive operations
-  reauthenticate: (user: User, password: string) => {
-    const credential = EmailAuthProvider.credential(user.email!, password);
-    return reauthenticateWithCredential(user, credential);
-  },
-
   updateEmail: (user: User, newEmail: string) => {
     return updateEmail(user, newEmail);
   },
 
   updatePassword: (user: User, newPassword: string) => {
     return updatePassword(user, newPassword);
+  },
+
+  deleteAccount: (user: User) => {
+    return deleteUser(user);
   },
 };
