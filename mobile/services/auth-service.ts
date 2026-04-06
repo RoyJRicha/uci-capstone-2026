@@ -8,13 +8,19 @@ import {
   signOut,
   updateEmail,
   updatePassword,
+  updateProfile,
 } from "firebase/auth";
 
 import { auth } from "@/firebase-config";
 
 export const authService = {
-  signUp: (email: string, password: string) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  signUp: (email: string, password: string, name: string) => {
+    return createUserWithEmailAndPassword(auth, email, password).then(
+      (userCredential) => {
+        const user = userCredential.user;
+        return updateProfile(user, { displayName: name });
+      },
+    );
   },
 
   signIn: (email: string, password: string) => {

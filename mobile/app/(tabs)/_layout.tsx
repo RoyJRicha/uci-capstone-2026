@@ -1,9 +1,13 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
+import { Tabs, router } from "expo-router";
 
+import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useEffect } from "react";
+
 import { Colors } from "@/constants/colors";
+import { useAuth } from "@/hooks/use-auth";
 
 type TabIconName = "assignment" | "receipt-long" | "history" | "person";
 
@@ -22,6 +26,18 @@ function TabIcon({
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = 56 + insets.bottom;
+
+  const { user, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace("/login");
+    }
+  }, [isLoading, user]);
+
+  if (isLoading || !user) {
+    return <View />;
+  }
 
   return (
     <Tabs

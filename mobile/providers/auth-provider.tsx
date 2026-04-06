@@ -14,7 +14,7 @@ import { authService } from "@/services/auth-service";
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
@@ -37,8 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextValue = {
     user,
     isLoading,
-    signUp: async (email, password) => {
-      await authService.signUp(email, password);
+    signUp: async (email, password, name) => {
+      await authService.signUp(email, password, name);
     },
     signIn: async (email, password) => {
       await authService.signIn(email, password);

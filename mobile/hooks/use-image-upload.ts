@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { API_BASE_URL as IMAGE_UPLOAD_API } from "@/constants/api";
+import { useAuth } from "@/hooks/use-auth";
 
 type UploadResponse = {
   success: boolean;
@@ -8,12 +9,18 @@ type UploadResponse = {
 };
 
 export function useImageUpload() {
+  const { user } = useAuth();
+
   const [loading, setLoading] = useState(false);
 
   async function uploadImage(
     uri: string,
     type: "shelf" | "receipt",
   ): Promise<UploadResponse> {
+    if (!user) {
+      throw new Error("User must be authenticated to upload images.");
+    }
+
     setLoading(true);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000); // 10 seconds
@@ -23,7 +30,7 @@ export function useImageUpload() {
 
       formData.append("file", {
         uri,
-        name: `${type}.jpg`,
+        name: `${type}_${user!.uid}_${Date.now()}.jpg`,
         type: "image/jpeg",
       } as any);
 

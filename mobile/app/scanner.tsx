@@ -145,14 +145,14 @@ export default function Scanner() {
     if (!success) {
       Toast.show({
         type: "error",
-        text1: "Upload failed. Please try again later.",
+        text1: "Failed to upload image. Please try again later.",
         text1Style: { fontSize: 13 },
       });
       console.error("image upload error:", data);
     } else {
       Toast.show({
         type: "success",
-        text1: "Upload successful!",
+        text1: "Successfully uploaded image!",
         text1Style: { fontSize: 13 },
       });
       router.replace("/history");

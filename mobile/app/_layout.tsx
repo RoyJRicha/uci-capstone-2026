@@ -28,8 +28,6 @@ import { DetectorProvider } from "@/providers/detector-provider";
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [appLoaded, setLoaded] = useState(false);
-
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -40,11 +38,13 @@ export default function RootLayout() {
     Manrope_800ExtraBold,
   });
 
+  const [appLoaded, setAppLoaded] = useState(false);
+
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync()
-        .then(() => setLoaded(true))
-        .catch(() => setLoaded(true));
+        .then(() => setAppLoaded(true))
+        .catch(() => setAppLoaded(true));
     }
   }, [fontsLoaded]);
 
@@ -60,6 +60,8 @@ export default function RootLayout() {
           <StatusBar style="dark" />
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="signup" options={{ headerShown: false }} />
             <Stack.Screen
               name="scanner"
               options={{

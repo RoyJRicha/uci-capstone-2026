@@ -6,8 +6,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AnimatedPressable } from "@/components/animated-pressable";
 import { Header } from "@/components/header";
 import { Colors, Shadows } from "@/constants/colors";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function ProfilePage() {
+  const { user, signOut } = useAuth();
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: Colors.surface }}
@@ -25,13 +28,13 @@ export default function ProfilePage() {
             className="text-on-surface mb-1 text-3xl tracking-tight"
             style={{ fontFamily: "Manrope_800ExtraBold" }}
           >
-            Alex Harrison
+            {user?.displayName ?? "Example Name"}
           </Text>
           <Text
             className="text-on-surface-variant mb-6 bg-transparent text-base"
             style={{ fontFamily: "Inter_500Medium" }}
           >
-            alex.harrison@research-pro.io
+            {user?.email ?? "example@email.com"}
           </Text>
 
           {/* Total Earnings */}
@@ -130,7 +133,10 @@ export default function ProfilePage() {
         </View>
 
         {/* Sign Out */}
-        <AnimatedPressable className="bg-error-container/20 active:bg-error-container/40 mb-10 flex-row items-center justify-center gap-2 rounded-xl py-4">
+        <AnimatedPressable
+          className="bg-error-container/20 active:bg-error-container/40 mb-10 flex-row items-center justify-center gap-2 rounded-xl py-4"
+          onPress={signOut}
+        >
           <MaterialIcons name="logout" size={20} color={Colors.error} />
           <Text
             className="text-error text-sm"
