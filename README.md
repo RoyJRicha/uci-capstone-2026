@@ -56,6 +56,14 @@ pip install -r requirements.txt
 # (it should look like server/.env.example):
 # GEMINI_API_KEY=your_api_key
 
+# to connect to the firebase database, go to https://console.firebase.google.com/u/0/project/wayvia-capstone/overview
+# go to Settings -> Service accounts, and press the "Generate new private key" button
+# rename the downloaded file to serviceAccountKey.json and move it within the server folder
+# then go to Settings > General and scroll down until you see
+# const firebaseConfig = {
+#   apiKey: ...
+# create a .env file in the server folder with the same format as server/.env.example, and paste the firebase config in it
+
 # start the FastAPI server
 fastapi dev --port 8000
 

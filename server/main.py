@@ -6,12 +6,15 @@ from datetime import datetime
 import PIL.Image
 import firebase_admin
 import pandas as pd
+from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from firebase_admin import credentials, db
 from google import genai
 from google.cloud import storage
 from pydantic import BaseModel
+
+load_dotenv()
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -94,7 +97,7 @@ def process_with_gemini(save_path: str, image_type: str):
 
     print(f"Processing {image_type} image...")
     response = client.models.generate_content(
-        model="gemini-3.1-pro-preview",
+        model="gemini-3.1-flash-lite-preview",
         contents=[query, img],
     )
 
@@ -129,15 +132,15 @@ def process_with_gemini(save_path: str, image_type: str):
 
 
 def upload_image_to_cloud(source_file_path, destination_blob_name):
-    storage_client = storage.Client()
-
-    bucket = storage_client.bucket("wayvia_storage_bucket")
-
-    blob = bucket.blob(destination_blob_name)
-
-    blob.upload_from_filename(source_file_path)
-
-    print(f"File {source_file_path} uploaded to {destination_blob_name} in Wayvia Cloud Storage.")
+    try:
+        # Use the local Firebase service account key for Google Cloud Storage authentication too
+        storage_client = storage.Client.from_service_account_json("serviceAccountKey.json")
+        bucket = storage_client.bucket("wayvia_storage_bucket")
+        blob = bucket.blob(destination_blob_name)
+        blob.upload_from_filename(source_file_path)
+        print(f"File {source_file_path} uploaded to {destination_blob_name} in Wayvia Cloud Storage.")
+    except Exception as e:
+        print(f"[WARNING] Skipping Cloud Storage Upload: You do not have IAM permissions configured yet. ({e})")
 
 @app.post("/upload")
 async def upload_image(file: UploadFile = File(...), background_tasks: BackgroundTasks = BackgroundTasks()):
