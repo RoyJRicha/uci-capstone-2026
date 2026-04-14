@@ -32,17 +32,17 @@ It is unable to capture date and amount in all tests
 """
 # testReceiptParser()
 
-from PIL import Image
+from PIL import Image, ImageOps
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 import easyocr  # now testing easyocr library
 
 reader = easyocr.Reader(['en'], gpu=False)
-img = np.array(Image.open("uploads/receipt1.jpg"))
-img2 = np.array(Image.open("uploads/receipt2.jpg"))
-img3 = np.array(Image.open("uploads/receipt3.jpg"))
-img4 = np.array(Image.open("uploads/receipt4.jpg"))
+img = np.array(ImageOps.exif_transpose(Image.open("uploads/receipt1.jpg")))
+img2 = np.array(ImageOps.exif_transpose(Image.open("uploads/receipt2.jpg")))
+img3 = np.array(ImageOps.exif_transpose(Image.open("uploads/receipt3.jpg")))
+img4 = np.array(ImageOps.exif_transpose(Image.open("uploads/receipt4.jpg")))
 
 def testEasyOCR(npImg: np.ndarray, showBoundingBox=False):
     results = reader.readtext(npImg)
