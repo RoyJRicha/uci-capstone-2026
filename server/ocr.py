@@ -38,17 +38,6 @@ import cv2
 from matplotlib import pyplot as plt
 import easyocr  # now testing easyocr library
 
-reader = easyocr.Reader(['en'], gpu=False)
-# sometimes image orientation is stored in EXIF metadata, and this is NOT read by default by Image.open()
-# Therefore, all images using Image.open() should also use exif_tranpose in case orientation data is needed
-img = np.array(ImageOps.exif_transpose(Image.open("uploads/receipt1.jpg")))
-img2 = np.array(ImageOps.exif_transpose(Image.open("uploads/receipt2.jpg")))
-img3 = np.array(ImageOps.exif_transpose(Image.open("uploads/receipt3.jpg")))
-img4 = np.array(ImageOps.exif_transpose(Image.open("uploads/receipt4.jpg")))
-img5 = np.array(ImageOps.exif_transpose(Image.open("uploads/receipt5.jpg")))
-
-
-
 def order_points(pts):
     """Orders the 4 corner points as: top-left, top-right, bottom-right, bottom-left"""
     rect = np.zeros((4, 2), dtype="float32")
@@ -373,8 +362,13 @@ def tester(filename: str):
     testEasyOCR(img3, True, filename + "3.txt")
     testEasyOCR(img4, True, filename + "4.txt")
 
-testEasyOCR(img, True)
-testEasyOCR(img2, True)
-testEasyOCR(img3, True)
-testEasyOCR(img4, True)
-testEasyOCR(img5, True)
+if __name__ == "__main__":
+    reader = easyocr.Reader(['en'], gpu=False)
+    # sometimes image orientation is stored in EXIF metadata, and this is NOT read by default by Image.open()
+    # Therefore, all images using Image.open() should also use exif_tranpose in case orientation data is needed
+    img = np.array(ImageOps.exif_transpose(Image.open("uploads/receipt1.jpg")))
+    img2 = np.array(ImageOps.exif_transpose(Image.open("uploads/receipt2.jpg")))
+    img3 = np.array(ImageOps.exif_transpose(Image.open("uploads/receipt3.jpg")))
+    img4 = np.array(ImageOps.exif_transpose(Image.open("uploads/receipt4.jpg")))
+    img5 = np.array(ImageOps.exif_transpose(Image.open("uploads/receipt5.jpg")))
+    tester("results_for_receipt")
