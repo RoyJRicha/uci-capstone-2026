@@ -1,11 +1,12 @@
 import re
 import os
 import json
+import pandas as pd
 from google import genai
 from google.genai import types
 
 
-def detect_store(text):
+def detect_store(text: str) -> str:
     text_upper = text.upper()
     if "ALBERTSONS" in text_upper:
         return "albertsons"
@@ -15,7 +16,7 @@ def detect_store(text):
         return "unknown"
 
 
-def parse_albertsons(text):
+def parse_albertsons(text: str) -> str:
     lines = [l.strip() for l in text.split('\n') if l.strip()]
     data  = {
         "store_name" : "Albertsons",
@@ -66,7 +67,7 @@ print(f"test: {test}")
 # Create client once at module level
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-def parse_with_llm(text):
+def parse_with_llm(text: str) -> str:
     prompt = f"""
     You are a receipt parser. Extract structured data from the OCR text below and return it as JSON.
 
@@ -114,7 +115,7 @@ def parse_with_llm(text):
         print(f"Gemini API error: {e}")
         return None
     
-def strip_footer(text):
+def strip_footer(text: str) -> str:
     # Everything after these keywords is noise
     cutoff_keywords = ['THANK YOU', 'FOR ALBERTSONS', 'FOR UQUEST',
                        'FORGOT TO SCAN', 'CHICK-FIL-A.COM']
@@ -126,7 +127,7 @@ def strip_footer(text):
         result.append(line)
     return '\n'.join(result)
 
-def parse_receipt(text):
+def _parse_receipt(text: str) -> str:
     text  = strip_footer(text)
     store = detect_store(text)
 
@@ -146,11 +147,41 @@ def parse_receipt(text):
         print(f"Unknown store ({store}) — using Gemini parser")
         return parse_with_llm(text)
 
-def tester(filename):
+def parse_receipt(text: str) -> pd.DataFrame:
+    """returns parsed receipt as a pandas dataframe"""
+    return convert_json_to_df(_parse_receipt(text))
+
+def convert_json_to_df(receipt_json: str) -> pd.DataFrame:
+    """
+    Converts json recieved from parser to pandas data frame for uploading to firebase
+    """
+    df = pd.json_normalize(
+        receipt_json,                   # Pass the list directly
+        record_path=['items'],          # Flatten the items array
+        meta=['store_name', 'address']  # Pull in store-level fields
+    )
+
+    # Rename columns
+    df.rename(columns={
+        'store_name'  : 'Store Name',
+        'address'     : 'Store Location',
+        'item_name'   : 'Item Description',
+        'item_code'   : 'Item UPC/SKU',
+        'item_count'  : 'Quantity',
+        'price'       : 'Item Price (Per Unit)'
+    }, inplace=True)
+    # Reorder columns
+    df = df[['Store Name', 'Store Location', 'Item Description', 'Item UPC/SKU', 'Quantity', 'Item Price (Per Unit)']]
+    return df
+
+
+def tester(filename: str):
     with open(filename, "w+") as f:
         with open("results_for_receipt3.txt", "r") as f2:
             x = f2.read()
-            json.dump(parse_receipt(x), f)
+            json_text = _parse_receipt(x)
+            print(convert_json_to_df(json_text))
+            json.dump(json_text, f)
 
 if __name__ == "__main__":
     # tester("first_test")
