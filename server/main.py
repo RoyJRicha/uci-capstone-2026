@@ -1,11 +1,11 @@
 import io
 import os
 import uuid
-from datetime import datetime
-
+import asyncio
 import PIL.Image
 import firebase_admin
 import pandas as pd
+from datetime import datetime
 from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +13,8 @@ from firebase_admin import credentials, db
 from google import genai
 from google.cloud import storage
 from pydantic import BaseModel
+
+from pipeline import run_pipeline
 
 load_dotenv()
 
@@ -70,67 +72,6 @@ def push_to_firebase(df: pd.DataFrame, image_type: str, extra_meta: dict) -> Non
     print(f"[Firebase] pushed {len(items)} row(s) to /{ref_path}")
 
 
-def process_with_gemini(save_path: str, image_type: str):
-    """
-    Runs after the HTTP response is already sent to the client.
-    Calls Gemini, parses the CSV result, and pushes to Firebase.
-    """
-    client = genai.Client()
-    img = PIL.Image.open(save_path)
-
-    if image_type == "receipt":
-        query = (
-            "Analyze this receipt image and systematically extract all purchase data. "
-            "Respond with ONLY a raw, perfectly parseable CSV stream (do not use markdown formatting or code blocks). "
-            "Use the exact following columns: Store Name, Store Location, Item Description, Item UPC/SKU, Quantity, Item Price (Per Unit). "
-            "To minimize output tokens, ONLY include the 'Store Name' and 'Store Location' on the very first row. "
-            "For all subsequent items, leave those two fields blank (just output the commas)."
-        )
-    else:
-        query = (
-            "Extract product and inventory information from this shelf photo and respond "
-            "with ONLY a parsable csv with the following columns: Product Description, brand, "
-            "general category, shelf visibility (full (1), partial(0), none(-1)), "
-            "and misplaced boolean (is it on the wrong shelf based on other items in photo). "
-            "IMPORTANT: if any field value contains a comma, wrap it in double-quotes."
-        )
-
-    print(f"Processing {image_type} image...")
-    response = client.models.generate_content(
-        model="gemini-3.1-flash-lite-preview",
-        contents=[query, img],
-    )
-
-    # Strip any potential markdown blocks Gemini occasionally throws in
-    clean_csv = response.text.replace("```csv", "").replace("```", "").strip()
-    df = pd.read_csv(io.StringIO(clean_csv), on_bad_lines='skip')
-
-    today = str(datetime.now())
-
-    if image_type == "receipt":
-        # Store name/location only appear on row 0 — forward-fill then drop cols from items
-        df["Store Name"] = df["Store Name"].ffill()
-        df["Store Location"] = df["Store Location"].ffill()
-        store_name = df["Store Name"].iloc[0] if not df.empty else ""
-        store_location = df["Store Location"].iloc[0] if not df.empty else ""
-        items_df = df.drop(columns=["Store Name", "Store Location"])
-        extra_meta = {
-            "datetime": today,
-            "store_name": store_name,
-            "store_location": store_location,
-        }
-        print(df)
-        push_to_firebase(items_df, image_type, extra_meta)
-    else:
-        location = input("Input the retail location of photo: ")
-        df["datetime"] = today
-        df["UPC"] = None
-        extra_meta = {"datetime": today, "location": location}
-        print(df)
-        push_to_firebase(df, image_type, extra_meta)
-
-
-
 def upload_image_to_cloud(source_file_path, destination_blob_name):
     try:
         # Use the local Firebase service account key for Google Cloud Storage authentication too
@@ -140,7 +81,28 @@ def upload_image_to_cloud(source_file_path, destination_blob_name):
         blob.upload_from_filename(source_file_path)
         print(f"File {source_file_path} uploaded to {destination_blob_name} in Wayvia Cloud Storage.")
     except Exception as e:
-        print(f"[WARNING] Skipping Cloud Storage Upload: You do not have IAM permissions configured yet. ({e})")
+        pass
+        # print(f"[WARNING] Skipping Cloud Storage Upload: You do not have IAM permissions configured yet. ({e})")
+
+
+def _run_pipeline_sync(save_path: str, metadata: dict):
+    result = asyncio.run(run_pipeline(save_path, metadata))
+    
+    if result.method_used != "human_audit":
+        today = str(datetime.now())
+        df    = pd.DataFrame(result.data.get("items", []))
+        
+        if metadata["image_type"] == "receipt":
+            store_name     = df["Store Name"].iloc[0] if not df.empty else ""
+            store_location = df["Store Location"].iloc[0] if not df.empty else ""
+            items_df       = df.drop(columns=["Store Name", "Store Location"])
+            extra_meta     = {"datetime": today, "store_name": store_name, "store_location": store_location}
+            push_to_firebase(items_df, "receipt", extra_meta)
+        else:
+            df["datetime"] = today
+            extra_meta     = {"datetime": today, "store_name": metadata.get("retailer_name", ""), "store_location": metadata.get("store_location", "")}
+            push_to_firebase(df, "shelf", extra_meta)
+
 
 @app.post("/upload")
 async def upload_image(file: UploadFile = File(...), background_tasks: BackgroundTasks = BackgroundTasks()):
@@ -159,9 +121,15 @@ async def upload_image(file: UploadFile = File(...), background_tasks: Backgroun
     # Determine image type based on the filename set by the mobile app ('shelf.jpg' or 'receipt.jpg')
     image_type = "receipt" if (file.filename or "").startswith("receipt") else "shelf"
     upload_path = os.path.join(image_type, unique_name)
-    # Queue Gemini processing — runs after response is returned to client
+    
+    store_location = "4255 CAMPUS DR IRVINE CA 92612"; retailer_name="Target"
+    metadata = {
+        "image_type": image_type,
+        "store_location": store_location,
+        "retailer_name": retailer_name,
+}
     background_tasks.add_task(upload_image_to_cloud, save_path, upload_path)
-    background_tasks.add_task(process_with_gemini, save_path, image_type)
+    background_tasks.add_task(_run_pipeline_sync, save_path, metadata)
 
     return {
         "status": "ok",

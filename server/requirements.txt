@@ -7,4 +7,10 @@ Pillow
 python-multipart
 python-dotenv
 firebase-admin
+google-search-results
+easyocr
+receiptparser
+munch
+pytesseract
+wand # requires installing imagemagick
 thefuzz

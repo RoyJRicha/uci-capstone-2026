@@ -3,10 +3,9 @@ import os
 import requests
 import urllib.parse
 from thefuzz import fuzz
-from pipeline import CONFIDENCE_THRESHOLD
 
 
-def extract_retailer_upc(self, kroger_upc: str, retailer_name: str = "") -> str:
+def extract_retailer_upc(kroger_upc: str, retailer_name: str = "") -> str:
     if any(name in retailer_name for name in ["Kroger", "Ralphs", "Albertsons"]):
         return kroger_upc
     elif any(name in retailer_name for name in ["Target", "Walmart"]):
@@ -19,7 +18,7 @@ def extract_retailer_upc(self, kroger_upc: str, retailer_name: str = "") -> str:
     else:
         return None
 
-def kroger_api(self, product_name: str, retailer_name: str) -> tuple[dict, float]:
+def kroger_api(product_name: str, retailer_name: str) -> tuple[dict, float]:
     if not product_name or not retailer_name:
         return {}, 0.0
     
@@ -64,9 +63,9 @@ def kroger_api(self, product_name: str, retailer_name: str) -> tuple[dict, float
                 if score > highest_score:
                     highest_score = score
                     best_match = item
-                    
+            # print(best_match.get("description"), highest_score)
             if best_match:
-                return {"upc": extract_retailer_upc(best_match.get("upc")),
+                return {"upc": extract_retailer_upc(best_match.get("upc"), retailer_name),
                         "matched_name": best_match.get("description")
                         }, highest_score
         
